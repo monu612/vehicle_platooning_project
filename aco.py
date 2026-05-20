@@ -8,11 +8,11 @@ def select_path(G, source, target, alpha=2, beta=3, exploration_rate=0.3):
     if not paths:
         return None
 
-    # 🔥 Exploration
+    # Exploration
     if random.random() < exploration_rate:
         return random.choice(paths)
 
-    # 🔥 Exploitation
+    # Exploitation
     scores = []
 
     for path in paths:
