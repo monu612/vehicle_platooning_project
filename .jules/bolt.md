@@ -1,0 +1,3 @@
+## 2026-05-20 - Graph Toplogy Caching
+**Learning:** In a highly repetitive simulation using graph algorithms like Ant Colony Optimization, calculating paths repeatedly via `nx.all_simple_paths` consumes a massive portion of execution time (>75%).
+**Action:** Use a deterministic, hashable representation of the graph's available topology (`frozenset(G.edges())`) combined with source and target as a cache key for `tuple(nx.all_simple_paths(G, source, target))`. Limits should be placed on this cache to avoid out-of-memory errors. Downstream functions will safely retrieve valid node sequences and fetch updated dynamic properties like edge weights or pheromones from the `Graph` object directly.

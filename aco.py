@@ -1,9 +1,25 @@
 import random
 import networkx as nx
 
-def select_path(G, source, target, alpha=2, beta=3, exploration_rate=0.3):
+_paths_cache = {}
+MAX_CACHE_SIZE = 1024
 
-    paths = list(nx.all_simple_paths(G, source, target, cutoff=4))
+def select_path(G, source, target, alpha=2, beta=3, exploration_rate=0.3):
+    """
+    Selects a path using Ant Colony Optimization.
+    Optimized: Caches all_simple_paths based on the graph's available edges to avoid
+    expensive redundant calculations during simulations with link failures.
+    """
+    edge_key = frozenset(G.edges())
+    cache_key = (source, target, edge_key)
+
+    if cache_key not in _paths_cache:
+        if len(_paths_cache) >= MAX_CACHE_SIZE:
+            _paths_cache.clear()
+        # Cache as tuple to prevent accidental modification by downstream code
+        _paths_cache[cache_key] = tuple(nx.all_simple_paths(G, source, target, cutoff=4))
+
+    paths = _paths_cache[cache_key]
 
     if not paths:
         return None
