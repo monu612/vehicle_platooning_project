@@ -1,9 +1,20 @@
 import random
 import networkx as nx
 
+_paths_cache = {}
+
 def select_path(G, source, target, alpha=2, beta=3, exploration_rate=0.3):
 
-    paths = list(nx.all_simple_paths(G, source, target, cutoff=4))
+    # Optimization: Cache all_simple_paths based on active edges (O(E) key)
+    # Using tuple(G.edges()) is safe for copied graphs as it preserves original nodes
+    cache_key = (source, target, tuple(G.edges()))
+    if cache_key not in _paths_cache:
+        # Bounded cache to prevent memory leaks in long simulations
+        if len(_paths_cache) > 1024:
+            _paths_cache.clear()
+        _paths_cache[cache_key] = list(nx.all_simple_paths(G, source, target, cutoff=4))
+
+    paths = _paths_cache[cache_key]
 
     if not paths:
         return None

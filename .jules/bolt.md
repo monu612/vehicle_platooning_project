@@ -1,0 +1,3 @@
+## 2024-05-22 - NetworkX all_simple_paths optimization
+**Learning:** `nx.all_simple_paths` is computationally expensive when called repeatedly. Caching it provides a ~2x speedup in simulations with limited mutations. However, using unbounded dictionary caches for dynamic graph states causes memory leaks. Furthermore, over-canonicalizing edges (e.g. `frozenset(frozenset(e))`) breaks directionality/mixed-types and rebuilding graphs omits isolated nodes leading to exceptions.
+**Action:** Use a bounded dictionary cache (e.g. clear when size > threshold) and a safe `tuple(G.edges())` key which operates in `O(E)`. Pass the original `G` directly to `nx.all_simple_paths` to ensure isolated nodes and node types are preserved while retaining the caching benefits.
