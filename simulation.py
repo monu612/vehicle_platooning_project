@@ -20,6 +20,11 @@ def run_simulation(runs=200, failure_rate=0.2, congestion_factor=1.5):
     redundancy_aco = []
     redundancy_baseline = []
 
+    # Precompute all possible simple paths from the base graph to avoid expensive recalculations
+    precomputed_paths = {
+        d: list(nx.all_simple_paths(G, "M", d, cutoff=4)) for d in destinations
+    }
+
     # Static baseline paths (computed once)
     baseline_paths = {}
     for d in destinations:
@@ -68,7 +73,11 @@ def run_simulation(runs=200, failure_rate=0.2, congestion_factor=1.5):
             # -------------------------
             # ACO SYSTEM
             # -------------------------
-            path = select_path(G_temp, "M", d, exploration_rate=exploration_rate)
+            path = select_path(
+                G_temp, "M", d,
+                exploration_rate=exploration_rate,
+                precomputed_paths=precomputed_paths[d]
+            )
 
             if path:
                 packets_received_aco += 1

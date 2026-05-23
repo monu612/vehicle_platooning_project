@@ -1,0 +1,3 @@
+## 2024-05-19 - Precomputing Paths in Dynamic Network Topology
+**Learning:** Calling `nx.all_simple_paths` repeatedly on a dynamically changing graph in a tight simulation loop creates a massive performance bottleneck. The path search algorithm is expensive, even with a cutoff.
+**Action:** Since network topologies often have a fixed set of nodes/possible edges, precompute all possible paths on the base topology once. In the dynamic simulation loop, use an O(N) edge existence check (`all(G.has_edge(u, v))`) to filter out invalid paths instead of recalculating the paths from scratch. This turned out to be nearly 5x faster for this simulation.
