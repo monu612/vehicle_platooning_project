@@ -1,9 +1,16 @@
 import random
 import networkx as nx
 
-def select_path(G, source, target, alpha=2, beta=3, exploration_rate=0.3):
+def select_path(G, source, target, alpha=2, beta=3, exploration_rate=0.3, precomputed_paths=None):
 
-    paths = list(nx.all_simple_paths(G, source, target, cutoff=4))
+    if precomputed_paths is not None:
+        # Filter precomputed paths to only those where all edges still exist in the current graph
+        paths = [
+            path for path in precomputed_paths
+            if all(G.has_edge(path[i], path[i+1]) for i in range(len(path) - 1))
+        ]
+    else:
+        paths = list(nx.all_simple_paths(G, source, target, cutoff=4))
 
     if not paths:
         return None
