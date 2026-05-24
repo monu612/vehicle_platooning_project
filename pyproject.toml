@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vehicle-platooning-project"
+version = "0.1.0"
+description = "ACO-based vehicle platooning network simulation."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "matplotlib>=3.8",
+    "networkx>=3.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+vehicle-platooning-sim = "simulation:main"
+vehicle-platooning-plots = "final_plots:main"
+vehicle-platooning-ui = "ui:main"
+
+[tool.setuptools]
+py-modules = [
+    "aco",
+    "final_plots",
+    "network",
+    "run",
+    "simulation",
+    "ui",
+    "vehicle_animation",
+    "visualization",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

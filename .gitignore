@@ -1,0 +1,23 @@
+# Operating system files
+.DS_Store
+
+# Python build/runtime files
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Generated project outputs
+output/
+results.csv
+report.txt
+simulation_data.json
+*_graph.png
+latency_distribution.png

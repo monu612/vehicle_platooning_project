@@ -1,31 +1,33 @@
+from __future__ import annotations
+
+import argparse
+import random
+
 import matplotlib.pyplot as plt
 import networkx as nx
-import random
+
 from network import create_spider_web_topology
 from aco import select_path, update_pheromone
 
-def animate_network(steps=25, pause_time=0.8):
 
-    G = create_spider_web_topology()
+def animate_network(steps: int = 25, pause_time: float = 0.8, seed: int | None = None) -> None:
+    rng = random.Random(seed)
+    G = create_spider_web_topology(rng=rng)
 
-    # Fixed layout for stability
     pos = nx.spring_layout(G, seed=42)
 
-    plt.ion()  # Interactive mode
+    plt.ion()
 
     for i in range(steps):
 
         plt.clf()
 
-        # 🔹 Simulate dynamic latency
         for u, v in G.edges():
-            G[u][v]['weight'] *= random.uniform(0.9, 1.1)
+            G[u][v]['weight'] *= rng.uniform(0.9, 1.1)
 
-        # 🔹 ACO routing (reduce exploration over time)
         exploration_rate = max(0.05, 0.3 * (1 - i / steps))
-        path = select_path(G, "M", "S6", exploration_rate=exploration_rate)
+        path = select_path(G, "M", "S6", exploration_rate=exploration_rate, rng=rng)
 
-        # 🔹 Update pheromone
         if path:
             update_pheromone(G, path)
 
@@ -89,5 +91,14 @@ def animate_network(steps=25, pause_time=0.8):
     plt.show()
 
 
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Animate a single ACO route.")
+    parser.add_argument("--steps", type=int, default=25, help="Number of animation frames.")
+    parser.add_argument("--pause-time", type=float, default=0.8, help="Pause between frames in seconds.")
+    parser.add_argument("--seed", type=int, default=None, help="Optional random seed.")
+    args = parser.parse_args()
+    animate_network(steps=args.steps, pause_time=args.pause_time, seed=args.seed)
+
+
 if __name__ == "__main__":
-    animate_network()
+    main()
