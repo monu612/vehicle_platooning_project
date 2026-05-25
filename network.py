@@ -29,7 +29,7 @@ def create_spider_web_topology(
 ) -> nx.Graph:
     """Create the vehicle communication topology used by the simulation."""
     rng = _build_rng(seed, rng)
-    G = nx.Graph()
+    G: nx.Graph = nx.Graph()
 
     G.add_nodes_from(NODES)
 
