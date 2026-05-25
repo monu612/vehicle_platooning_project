@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+from typing import Sequence
 
 import networkx as nx
 
@@ -26,7 +27,7 @@ def _path_latency(G: nx.Graph, path: list[str]) -> float:
     return sum(float(G[source][target].get("weight", 1.0)) for source, target in zip(path, path[1:]))
 
 
-def _mean(values: list[float]) -> float:
+def _mean(values: Sequence[float]) -> float:
     return sum(values) / len(values) if values else 0.0
 
 
@@ -68,7 +69,7 @@ def run_simulation(
     redundancy_aco = []
     redundancy_baseline = []
 
-    baseline_paths = {}
+    baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
         try:
             baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
