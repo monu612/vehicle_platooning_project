@@ -48,6 +48,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    candidate_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -55,10 +56,23 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if candidate_paths is not None:
+        # Optimization: filter pre-calculated candidate paths using adjacency view for fast O(1) checks
+        adj = G.adj
+        paths = []
+        for path in candidate_paths:
+            valid = True
+            for i in range(len(path) - 1):
+                if path[i + 1] not in adj[path[i]]:
+                    valid = False
+                    break
+            if valid:
+                paths.append(list(path))
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
