@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import math
 import random
+import functools
 from collections.abc import Sequence
+from typing import Any
 
 import networkx as nx
-
 
 MIN_EDGE_COST = 1e-9
 
@@ -39,6 +40,25 @@ def _path_score(
     return score if math.isfinite(score) and score > 0 else 0.0
 
 
+# Pre-compute simple paths using an LRU cache to prevent memory leaks
+# with changing topologies.
+@functools.lru_cache(maxsize=128)
+def _get_simple_paths(
+    edges: tuple[tuple[str, str], ...],
+    source: str,
+    target: str,
+    cutoff: int,
+    is_directed: bool
+) -> list[tuple[str, ...]]:
+    """Cached helper to fetch all simple paths for a given static topology."""
+    # Reconstruct a basic graph just for pathfinding based on the edge set.
+    G: Any = nx.DiGraph() if is_directed else nx.Graph()
+    G.add_edges_from(edges)
+
+    paths = nx.all_simple_paths(G, source, target, cutoff=cutoff)
+    return [tuple(p) for p in paths]
+
+
 def select_path(
     G: nx.Graph,
     source: str,
@@ -56,7 +76,21 @@ def select_path(
     rng = rng or random.Random()
 
     try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        # Optimization: Cache all_simple_paths based on the current edges.
+        # nx.all_simple_paths is extremely slow when called repeatedly.
+        # Use a sorted tuple of edges to handle the graph state reliably.
+        if G.is_directed():
+            edges = tuple(sorted(G.edges()))
+        else:
+            edge_gen = ((u, v) if u <= v else (v, u) for u, v in G.edges())
+            edges = tuple(sorted(edge_gen))
+
+        paths_tuple = _get_simple_paths(
+            edges, source, target, cutoff, G.is_directed()
+        )
+
+        # Convert tuples back to lists since caller expects list[str]
+        paths = [list(p) for p in paths_tuple]
     except (nx.NetworkXNoPath, nx.NodeNotFound):
         return None
 
@@ -84,7 +118,7 @@ def update_pheromone(
     rho: float = 0.1,
     deposit_factor: float = 5.0,
 ) -> float:
-    """Update pheromone on a successful path and return the deposited reward."""
+    """Update pheromone on a successful path and return deposited reward."""
     if not 0.0 <= rho <= 1.0:
         raise ValueError("rho must be between 0 and 1.")
 
