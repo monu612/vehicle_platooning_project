@@ -1,0 +1,9 @@
+name: vehicle-platooning-project
+channels:
+  - defaults
+dependencies:
+  - python>=3.10
+  - networkx
+  - matplotlib
+  - pytest
+  - pip
