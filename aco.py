@@ -10,11 +10,6 @@ import networkx as nx
 MIN_EDGE_COST = 1e-9
 
 
-def _edge_metric(edge: dict, name: str, default: float) -> float:
-    value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
-
-
 def _path_score(
     G: nx.Graph,
     path: Sequence[str],
@@ -26,10 +21,26 @@ def _path_score(
 
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        # Optimization: Inline metric access and bound checks to avoid function
+        # call and max() overhead in this hot loop.
+        latency = float(edge.get("weight", 1.0))
+        if latency <= MIN_EDGE_COST:
+            latency = MIN_EDGE_COST
+
+        congestion = float(edge.get("congestion", 1.0))
+        if congestion <= MIN_EDGE_COST:
+            congestion = MIN_EDGE_COST
+
+        reliability = float(edge.get("reliability", 1.0))
+        if reliability <= MIN_EDGE_COST:
+            reliability = MIN_EDGE_COST
+        elif reliability > 1.0:
+            reliability = 1.0
+
+        edge_pheromone = float(edge.get("pheromone", 1.0))
+        if edge_pheromone <= MIN_EDGE_COST:
+            edge_pheromone = MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -84,7 +95,7 @@ def update_pheromone(
     rho: float = 0.1,
     deposit_factor: float = 5.0,
 ) -> float:
-    """Update pheromone on a successful path and return the deposited reward."""
+    """Update pheromone on a path and return the deposited reward."""
     if not 0.0 <= rho <= 1.0:
         raise ValueError("rho must be between 0 and 1.")
 
@@ -99,13 +110,23 @@ def update_pheromone(
             return 0.0
 
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+
+        # Optimization: Inline metric lookup and bounds check
+        weight = float(G[source][target].get("weight", 1.0))
+        if weight <= MIN_EDGE_COST:
+            weight = MIN_EDGE_COST
+        total_latency += weight
 
     reward = deposit_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
-        current = _edge_metric(edge, "pheromone", 1.0)
+
+        # Optimization: Inline metric lookup and bounds check
+        current = float(edge.get("pheromone", 1.0))
+        if current <= MIN_EDGE_COST:
+            current = MIN_EDGE_COST
+
         edge["pheromone"] = (1 - rho) * current + reward
 
     return reward

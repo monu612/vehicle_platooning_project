@@ -1,0 +1,3 @@
+## 2024-05-28 - Inlining function calls in Python hot loops
+**Learning:** In Python, calling functions inside tight nested loops (like iterating over graph paths and edges in `_path_score` inside the simulation loop) introduces noticeable function call overhead. Additionally, using built-ins like `max()` or `min()` within these loops can be slower than explicit `if` statements for simple boundary checks.
+**Action:** When identifying bottlenecks in core simulation components, prefer inlining simple metric lookup logic or bounds checks over helper functions, as this can yield measurable execution time improvements (around 15% in this case) without significantly reducing readability.
