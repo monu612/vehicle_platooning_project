@@ -76,6 +76,16 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # OPTIMIZATION: Precompute all paths up to cutoff=4 once, rather than
+    # finding them dynamically on each loop iteration. This significantly
+    # reduces the simulation execution time.
+    all_possible_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            all_possible_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            all_possible_paths[destination] = []
+
     for i in range(runs):
         G_temp = G.copy()
 
@@ -104,6 +114,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=all_possible_paths.get(destination),
             )
 
             if path:
