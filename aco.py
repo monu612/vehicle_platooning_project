@@ -48,6 +48,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    candidate_paths: list[list[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -55,10 +56,19 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if candidate_paths is not None:
+        # ⚡ Optimization: Filter candidate paths instead of running expensive
+        # nx.all_simple_paths on the fly. This speeds up execution
+        # significantly when the topology is mostly static.
+        paths = [
+            p for p in candidate_paths
+            if all(G.has_edge(u, v) for u, v in zip(p, p[1:]))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
@@ -84,7 +94,7 @@ def update_pheromone(
     rho: float = 0.1,
     deposit_factor: float = 5.0,
 ) -> float:
-    """Update pheromone on a successful path and return the deposited reward."""
+    """Update pheromone on a successful path and return deposited reward."""
     if not 0.0 <= rho <= 1.0:
         raise ValueError("rho must be between 0 and 1.")
 
@@ -99,7 +109,8 @@ def update_pheromone(
             return 0.0
 
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        latency = _edge_metric(G[source][target], "weight", 1.0)
+        total_latency += latency
 
     reward = deposit_factor / total_latency
 

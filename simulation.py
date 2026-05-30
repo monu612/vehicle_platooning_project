@@ -14,17 +14,24 @@ from network import create_spider_web_topology
 DESTINATIONS = ("S1", "S2", "S3", "S4", "S5", "S6")
 
 
-def _validate_inputs(runs: int, failure_rate: float, congestion_factor: float) -> None:
+def _validate_inputs(
+    runs: int,
+    failure_rate: float,
+    congestion_factor: float,
+) -> None:
     if runs < 0:
         raise ValueError("runs must be greater than or equal to 0.")
     if not 0.0 <= failure_rate <= 1.0:
         raise ValueError("failure_rate must be between 0 and 1.")
     if congestion_factor < 1.0:
-        raise ValueError("congestion_factor must be greater than or equal to 1.")
+        raise ValueError("congestion_factor must be >= 1.")
 
 
 def _path_latency(G: nx.Graph, path: list[str]) -> float:
-    return sum(float(G[source][target].get("weight", 1.0)) for source, target in zip(path, path[1:]))
+    return sum(
+        float(G[source][target].get("weight", 1.0))
+        for source, target in zip(path, path[1:])
+    )
 
 
 def _mean(values: Sequence[float]) -> float:
@@ -70,11 +77,24 @@ def run_simulation(
     redundancy_baseline = []
 
     baseline_paths: dict[str, list[str] | None] = {}
-    for destination in DESTINATIONS:
+    for dest in DESTINATIONS:
         try:
-            baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
+            p = nx.shortest_path(G, "M", dest, weight="weight")
+            baseline_paths[dest] = p
         except (nx.NetworkXNoPath, nx.NodeNotFound):
-            baseline_paths[destination] = None
+            baseline_paths[dest] = None
+
+    path_cache: dict[tuple[str, str, int], list[list[str]]] = {}
+    # ⚡ Optimization: Prepopulate cache using the base topology `G`.
+    # This prevents the cache from missing paths that happened to be broken
+    # on the first simulation run.
+    for destination in DESTINATIONS:
+        cache_key = ("M", destination, 4)
+        try:
+            paths = nx.all_simple_paths(G, "M", destination, cutoff=4)
+            path_cache[cache_key] = list(paths)
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            path_cache[cache_key] = []
 
     for i in range(runs):
         G_temp = G.copy()
@@ -86,11 +106,13 @@ def run_simulation(
                 G_temp.remove_edge(u, v)
 
         for u, v, edge in G_temp.edges(data=True):
-            edge["weight"] = float(edge.get("weight", 1.0)) * rng.uniform(0.9, 1.1)
-            edge["congestion"] = float(edge.get("congestion", 1.0)) * rng.uniform(1.0, congestion_factor)
+            w = float(edge.get("weight", 1.0)) * rng.uniform(0.9, 1.1)
+            edge["weight"] = w
+            c = float(edge.get("congestion", 1.0))
+            edge["congestion"] = c * rng.uniform(1.0, congestion_factor)
 
-            reliability = float(edge.get("reliability", 1.0)) * rng.uniform(0.95, 1.05)
-            edge["reliability"] = min(max(reliability, 0.5), 1.0)
+            rel = float(edge.get("reliability", 1.0)) * rng.uniform(0.95, 1.05)
+            edge["reliability"] = min(max(rel, 0.5), 1.0)
             edge["pheromone"] = float(edge.get("pheromone", 1.0))
 
         exploration_rate = max(0.05, 0.3 * (1 - i / runs))
@@ -98,12 +120,16 @@ def run_simulation(
         for destination in DESTINATIONS:
             packets_sent += 1
 
+            cache_key = ("M", destination, 4)
+            candidates = path_cache.get(cache_key)
+
             path = select_path(
                 G_temp,
                 "M",
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                candidate_paths=candidates,
             )
 
             if path:
@@ -120,7 +146,8 @@ def run_simulation(
 
                 for source, target in zip(base_path, base_path[1:]):
                     if G_temp.has_edge(source, target):
-                        total_latency_base += float(G_temp[source][target].get("weight", 1.0))
+                        w = float(G_temp[source][target].get("weight", 1.0))
+                        total_latency_base += w
                     else:
                         valid = False
                         break
@@ -158,12 +185,28 @@ def run_simulation(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run the vehicle platooning ACO simulation.")
-    parser.add_argument("--runs", type=int, default=200, help="Number of simulation iterations.")
-    parser.add_argument("--failure-rate", type=float, default=0.2, help="Base link failure rate, 0 to 1.")
-    parser.add_argument("--congestion-factor", type=float, default=1.5, help="Maximum congestion multiplier.")
-    parser.add_argument("--seed", type=int, default=None, help="Optional random seed for repeatable results.")
-    parser.add_argument("--json", action="store_true", help="Print results as JSON.")
+    parser = argparse.ArgumentParser(
+        description="Run the vehicle platooning ACO simulation."
+    )
+    parser.add_argument(
+        "--runs", type=int, default=200,
+        help="Number of simulation iterations."
+    )
+    parser.add_argument(
+        "--failure-rate", type=float, default=0.2,
+        help="Base link failure rate, 0 to 1."
+    )
+    parser.add_argument(
+        "--congestion-factor", type=float, default=1.5,
+        help="Maximum congestion multiplier."
+    )
+    parser.add_argument(
+        "--seed", type=int, default=None,
+        help="Optional random seed for repeatable results."
+    )
+    parser.add_argument(
+        "--json", action="store_true", help="Print results as JSON."
+    )
     args = parser.parse_args()
 
     results = run_simulation(
