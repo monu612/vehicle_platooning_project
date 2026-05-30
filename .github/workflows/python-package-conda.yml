@@ -24,7 +24,10 @@ jobs:
         pip install -e ".[dev]" flake8 mypy types-networkx
     - name: Lint with flake8 and mypy
       run: |
-        flake8 aco.py simulation.py network.py final_plots.py vehicle_animation.py visualization.py tests/
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 aco.py simulation.py network.py final_plots.py vehicle_animation.py visualization.py tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+        flake8 aco.py simulation.py network.py final_plots.py vehicle_animation.py visualization.py tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
         mypy --ignore-missing-imports aco.py simulation.py
     - name: Test with pytest
       run: |
