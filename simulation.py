@@ -72,9 +72,23 @@ def run_simulation(
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
         try:
-            baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
+            baseline_paths[destination] = nx.shortest_path(
+                G, "M", destination, weight="weight"
+            )
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
+
+    # Performance Optimization:
+    # Precompute all simple paths for the base topology once instead of
+    # recalculating them in every simulation run, saving significant
+    # pathfinding time.
+    precomputed_all_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            pre_paths = nx.all_simple_paths(G, "M", destination, cutoff=4)
+            precomputed_all_paths[destination] = list(pre_paths)
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_all_paths[destination] = []
 
     for i in range(runs):
         G_temp = G.copy()
@@ -104,6 +118,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_all_paths[destination],
             )
 
             if path:
