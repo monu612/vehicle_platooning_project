@@ -48,17 +48,36 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
-    """Select a route using ant-colony pheromone and edge quality metrics."""
+    """Select a route using ant-colony pheromone and edge quality metrics.
+
+    Performance Optimization:
+    Accepts precomputed_paths to avoid recalculating all simple paths on
+    the dynamic graph via nx.all_simple_paths(), replacing an O(V+E)
+    graph traversal with simple O(1) edge lookups.
+    """
     if not 0.0 <= exploration_rate <= 1.0:
         raise ValueError("exploration_rate must be between 0 and 1.")
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        paths = []
+        for p in precomputed_paths:
+            # Check if all edges in the precomputed path exist in G
+            valid = True
+            for u, v in zip(p, p[1:]):
+                if not G.has_edge(u, v):
+                    valid = False
+                    break
+            if valid:
+                paths.append(list(p))
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
@@ -84,7 +103,7 @@ def update_pheromone(
     rho: float = 0.1,
     deposit_factor: float = 5.0,
 ) -> float:
-    """Update pheromone on a successful path and return the deposited reward."""
+    """Update pheromone on a successful path and return deposited reward."""
     if not 0.0 <= rho <= 1.0:
         raise ValueError("rho must be between 0 and 1.")
 
