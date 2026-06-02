@@ -1,0 +1,3 @@
+## 2024-05-24 - Precomputing NetworkX Simple Paths on Static Topologies
+**Learning:** In simulations using NetworkX graphs where node topology is completely static but edges dynamically fail or change attributes, `nx.all_simple_paths` becomes a severe performance bottleneck if called repeatedly per simulation tick. Precomputing all simple paths on the pristine base graph and filtering them lazily (using `G.has_edge(u, v)`) is dramatically faster than allowing NetworkX to run graph traversals on dynamic subgraphs.
+**Action:** Always check if a graph's node structure is immutable during repetitive simulations. If so, move expensive pathfinding algorithms out of the loop, precompute paths on initialization, and validate edge existence during the active simulation loop.
