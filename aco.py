@@ -48,6 +48,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -55,27 +56,34 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if paths is None:
+        try:
+            valid_paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
+    else:
+        # Precomputed paths provided: filter out those containing removed edges
+        valid_paths = [
+            list(p) for p in paths
+            if all(G.has_edge(p[i], p[i+1]) for i in range(len(p) - 1))
+        ]
 
-    if not paths:
+    if not valid_paths:
         return None
 
     if rng.random() < exploration_rate:
-        return rng.choice(paths)
+        return rng.choice(valid_paths)
 
-    scores = [_path_score(G, path, alpha, beta) for path in paths]
+    scores = [_path_score(G, valid_path, alpha, beta) for valid_path in valid_paths]
 
     total = sum(scores)
 
     if total <= 0:
-        return rng.choice(paths)
+        return rng.choice(valid_paths)
 
     probabilities = [s / total for s in scores]
 
-    return rng.choices(paths, weights=probabilities, k=1)[0]
+    return rng.choices(valid_paths, weights=probabilities, k=1)[0]
 
 
 def update_pheromone(
