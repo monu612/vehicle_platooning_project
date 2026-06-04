@@ -70,11 +70,17 @@ def run_simulation(
     redundancy_baseline = []
 
     baseline_paths: dict[str, list[str] | None] = {}
+    aco_base_paths: dict[str, list[list[str]]] = {}
     for destination in DESTINATIONS:
         try:
             baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
+
+        try:
+            aco_base_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_base_paths[destination] = []
 
     for i in range(runs):
         G_temp = G.copy()
@@ -98,12 +104,18 @@ def run_simulation(
         for destination in DESTINATIONS:
             packets_sent += 1
 
+            valid_paths = [
+                path for path in aco_base_paths[destination]
+                if all(G_temp.has_edge(u, v) for u, v in zip(path, path[1:]))
+            ]
+
             path = select_path(
                 G_temp,
                 "M",
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=valid_paths,
             )
 
             if path:
