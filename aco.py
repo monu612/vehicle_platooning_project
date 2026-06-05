@@ -48,6 +48,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    path_cache: dict[tuple[str, str, int], list[list[str]]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -55,10 +56,23 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if path_cache is not None and (source, target, cutoff) in path_cache:
+        precomputed_paths = path_cache[(source, target, cutoff)]
+
+        paths = []
+        for p in precomputed_paths:
+            valid = True
+            for u, v in zip(p, p[1:]):
+                if not G.has_edge(u, v):
+                    valid = False
+                    break
+            if valid:
+                paths.append(p)
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
