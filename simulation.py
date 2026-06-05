@@ -59,6 +59,14 @@ def run_simulation(
 
     G = create_spider_web_topology(rng=rng)
 
+    # ⚡ Bolt Optimization: Precompute all possible simple paths on the static topology
+    # This prevents repeatedly recalculating nx.all_simple_paths on the dynamic
+    # subgraph, converting a potentially expensive O(V+E) graph traversal into
+    # a simple O(1) dictionary lookup and O(L) list iteration for edge existence checking.
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        precomputed_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+
     packets_sent = 0
     packets_received_aco = 0
     packets_received_baseline = 0
@@ -104,6 +112,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths[destination],
             )
 
             if path:
