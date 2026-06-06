@@ -1,0 +1,11 @@
+name: base
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10
+  - pip
+  - matplotlib>=3.8
+  - networkx>=3.2
+  - pytest>=8.0
+  - pip:
+      - -e .
