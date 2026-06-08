@@ -1,0 +1,3 @@
+## 2026-06-08 - Pathfinding Performance Pattern in Dynamic NetworkX Graphs
+**Learning:** For dynamic NetworkX graphs where topology mutates during a simulation (e.g. edge removal due to failures), dynamically calling `nx.all_simple_paths` on every routing decision creates a massive performance bottleneck.
+**Action:** Precompute paths on the pristine static topology before the simulation loop, then pass these paths into pathfinding routines where they can be quickly filtered for validity using `all(G.has_edge(u, v))`. This avoids the enormous overhead of re-traversing the graph and shifts the cost to a simple edge validity check.
