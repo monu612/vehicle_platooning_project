@@ -76,6 +76,17 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # Optimization: Precompute simple paths once on the static base topology
+    # avoiding repeated expensive graph traversals on mutated networks
+    cutoff = 4
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            paths = list(nx.all_simple_paths(G, "M", destination, cutoff=cutoff))
+            precomputed_paths[destination] = paths
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_paths[destination] = []
+
     for i in range(runs):
         G_temp = G.copy()
 
@@ -104,6 +115,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths.get(destination)
             )
 
             if path:
