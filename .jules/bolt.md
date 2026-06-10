@@ -1,0 +1,3 @@
+## 2025-02-28 - Precomputing Simple Paths for Dynamic Graphs
+**Learning:** In networkx, calling `nx.all_simple_paths` repeatedly inside a loop is extremely expensive as it performs a DFS traversal each time. For simulations where the base graph topology is bounded but edges temporarily fail, it's significantly faster to precompute the paths once on the full base graph.
+**Action:** When working with dynamic simulations using networkx, precompute possible paths upfront on the pristine static base topology and filter them quickly using `G.has_edge(u, v)` instead of re-running the DFS pathfinding on the mutated graph during each iteration.
