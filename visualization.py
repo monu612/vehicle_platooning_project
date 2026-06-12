@@ -16,6 +16,11 @@ def animate_network(steps: int = 25, pause_time: float = 0.8, seed: int | None =
 
     pos = nx.spring_layout(G, seed=42)
 
+    try:
+        all_simple_paths_s6 = list(nx.all_simple_paths(G, "M", "S6", cutoff=4))
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        all_simple_paths_s6 = []
+
     plt.ion()
 
     for i in range(steps):
@@ -26,7 +31,7 @@ def animate_network(steps: int = 25, pause_time: float = 0.8, seed: int | None =
             G[u][v]['weight'] *= rng.uniform(0.9, 1.1)
 
         exploration_rate = max(0.05, 0.3 * (1 - i / steps))
-        path = select_path(G, "M", "S6", exploration_rate=exploration_rate, rng=rng)
+        path = select_path(G, "M", "S6", exploration_rate=exploration_rate, rng=rng, precomputed_paths=all_simple_paths_s6)
 
         if path:
             update_pheromone(G, path)

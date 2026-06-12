@@ -19,6 +19,13 @@ def animate_realistic(steps: int = 40, seed: int | None = None) -> None:
 
     path_history = []
 
+    all_simple_paths = {}
+    for target in ["S1", "S2", "S3", "S4", "S5", "S6"]:
+        try:
+            all_simple_paths[target] = list(nx.all_simple_paths(G, "M", target, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            all_simple_paths[target] = []
+
     plt.ion()
 
     for i in range(steps):
@@ -38,7 +45,7 @@ def animate_realistic(steps: int = 40, seed: int | None = None) -> None:
 
         paths = []
         for target in ["S1", "S2", "S3", "S4", "S5", "S6"]:
-            path = select_path(G, "M", target, rng=rng)
+            path = select_path(G, "M", target, rng=rng, precomputed_paths=all_simple_paths[target])
             if path:
                 update_pheromone(G, path)
                 paths.append(path)
