@@ -76,6 +76,17 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # Optimization: Precompute all valid simple paths on the pristine base graph
+    # before dynamic link failures occur. This prevents expensive networkx
+    # pathfinding overhead in the main loop while still allowing filtering
+    # based on the dynamic graph state.
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            precomputed_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_paths[destination] = []
+
     for i in range(runs):
         G_temp = G.copy()
 
@@ -104,6 +115,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths.get(destination),
             )
 
             if path:
