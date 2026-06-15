@@ -69,12 +69,19 @@ def run_simulation(
     redundancy_aco = []
     redundancy_baseline = []
 
+    # Optimization: Precompute paths on pristine graph to avoid expensive nx.all_simple_paths in hot loop
+    precomputed_paths: dict[str, list[list[str]]] = {}
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
         try:
             baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
+
+        try:
+            precomputed_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_paths[destination] = []
 
     for i in range(runs):
         G_temp = G.copy()
@@ -104,6 +111,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths[destination],
             )
 
             if path:
