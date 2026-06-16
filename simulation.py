@@ -76,6 +76,13 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    precomputed_all_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            precomputed_all_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_all_paths[destination] = []
+
     for i in range(runs):
         G_temp = G.copy()
 
@@ -104,6 +111,7 @@ def run_simulation(
                 destination,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_all_paths.get(destination),
             )
 
             if path:
