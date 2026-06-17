@@ -57,6 +57,8 @@ def select_path(
     rng = rng or random.Random()
 
     if precomputed_paths is not None:
+        # OPTIMIZATION: Filter precomputed paths using fast O(N) edge checks
+        # instead of searching from scratch, improving performance significantly.
         paths = [
             list(p) for p in precomputed_paths
             if all(G.has_edge(u, v) for u, v in zip(p, p[1:]))
