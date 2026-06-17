@@ -1,0 +1,3 @@
+## 2026-06-17 - Precompute Paths for NetworkX Routing
+**Learning:** In a dynamic NetworkX graph simulation where edges fail and properties change but nodes are static, calling `nx.all_simple_paths` repeatedly inside the simulation loop is extremely slow. It's much faster to precompute the simple paths on the pristine static topology before dynamic mutations occur, and then simply filter the precomputed paths using `G.has_edge()` during each simulation tick. This avoids repeating expensive pathfinding searches.
+**Action:** When working on dynamic topology simulations with NetworkX where nodes don't change, always precompute static paths and perform fast validation (like edge checks) dynamically rather than searching from scratch every time.
