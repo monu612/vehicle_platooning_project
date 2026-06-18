@@ -3,7 +3,14 @@ import random
 import networkx as nx
 import pytest
 
-from aco import select_path, update_pheromone
+from aco import (
+    select_path,
+    update_pheromone,
+    evaporate_all,
+    deposit_elite,
+    PHEROMONE_MIN,
+    PHEROMONE_MAX,
+)
 from network import create_spider_web_topology
 
 
@@ -47,3 +54,67 @@ def test_update_pheromone_ignores_invalid_path():
     graph = create_spider_web_topology(seed=123)
 
     assert update_pheromone(graph, ["M", "UNKNOWN"]) == 0.0
+
+
+def test_update_pheromone_clamps_to_mmas_bounds():
+    """Pheromone should never exceed PHEROMONE_MAX."""
+    graph = create_spider_web_topology(seed=123)
+    path = nx.shortest_path(graph, "M", "S6", weight="weight")
+
+    # Deposit many times to push pheromone up.
+    for _ in range(200):
+        update_pheromone(graph, path, deposit_factor=50.0)
+
+    for source, target in zip(path, path[1:]):
+        assert graph[source][target]["pheromone"] <= PHEROMONE_MAX
+
+
+def test_evaporate_all_reduces_pheromone():
+    graph = create_spider_web_topology(seed=123)
+
+    # Set pheromone high on all edges.
+    for _, _, edge in graph.edges(data=True):
+        edge["pheromone"] = 5.0
+
+    evaporate_all(graph, rho=0.2)
+
+    for _, _, edge in graph.edges(data=True):
+        assert edge["pheromone"] < 5.0
+        assert edge["pheromone"] >= PHEROMONE_MIN
+
+
+def test_evaporate_all_respects_min_bound():
+    graph = create_spider_web_topology(seed=123)
+
+    # Evaporate many times — should never go below PHEROMONE_MIN.
+    for _ in range(500):
+        evaporate_all(graph, rho=0.5)
+
+    for _, _, edge in graph.edges(data=True):
+        assert edge["pheromone"] >= PHEROMONE_MIN
+
+
+def test_evaporate_all_rejects_invalid_rho():
+    graph = create_spider_web_topology(seed=123)
+
+    with pytest.raises(ValueError):
+        evaporate_all(graph, rho=1.5)
+
+
+def test_deposit_elite_increases_pheromone_on_path():
+    graph = create_spider_web_topology(seed=123)
+    path = nx.shortest_path(graph, "M", "S6", weight="weight")
+    before = [graph[s][t]["pheromone"] for s, t in zip(path, path[1:])]
+
+    deposit_elite(graph, path, elite_factor=3.0)
+
+    after = [graph[s][t]["pheromone"] for s, t in zip(path, path[1:])]
+    assert all(a > b for a, b in zip(after, before))
+
+
+def test_deposit_elite_ignores_empty_path():
+    graph = create_spider_web_topology(seed=123)
+    # Should not raise.
+    deposit_elite(graph, None)
+    deposit_elite(graph, [])
+    deposit_elite(graph, ["M"])
