@@ -207,6 +207,15 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # Performance Optimization: Pre-compute all simple paths on pristine topology
+    # to avoid expensive repeated calculation in dynamically changing graph.
+    precomputed_simple_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            precomputed_simple_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_simple_paths[destination] = []
+
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_simple_paths.get(destination),
             )
 
             if path:
