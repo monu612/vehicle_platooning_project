@@ -1,0 +1,3 @@
+## 2026-06-20 - Precomputing simple paths on a static base topology
+**Learning:** In dynamically failing graphs where only edges drop but the base node structure remains static, regenerating all possible paths continuously (e.g. `nx.all_simple_paths` on a subgraph where edges drop out randomly) is a significant bottleneck. Lazy generation inside the loop wastes extensive computational cycles during simulated iterations.
+**Action:** When pathfinding on the dynamic networkx graph, precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them using `G.has_edge()` during each dynamically disrupted state. Do not use lazy initialization directly on mutated subgraphs if all possible paths can be discovered quickly upfront.
