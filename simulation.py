@@ -200,6 +200,13 @@ def run_simulation(
     history: list[IterationMetrics] = []
 
     # Static baseline: pre-compute shortest paths once.
+    # Pre-compute all simple paths for ACO to avoid nx.all_simple_paths overhead in each iteration
+    aco_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[destination] = []
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
         try:
@@ -263,6 +270,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=aco_paths[destination],
             )
 
             if path:
