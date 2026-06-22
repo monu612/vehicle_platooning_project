@@ -37,6 +37,14 @@ def animate_realistic(
     G = create_spider_web_topology(rng=rng)
     nodes = list(G.nodes())
 
+    # Precompute paths for ACO
+    aco_paths: dict[str, list[list[str]]] = {}
+    for dest in ["S1", "S2", "S3", "S4", "S5", "S6"]:
+        try:
+            aco_paths[dest] = list(nx.all_simple_paths(G, "M", dest, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[dest] = []
+
     # Compute a nice initial layout, then perturb each frame.
     pos = nx.spring_layout(G, seed=42, k=2.5)
     # Convert to mutable lists.
@@ -79,7 +87,7 @@ def animate_realistic(
         exploration_rate = max(0.05, 0.3 * (1 - frame / steps))
         current_paths: list[list[str]] = []
         for target in ["S1", "S2", "S3", "S4", "S5", "S6"]:
-            path = select_path(G, "M", target, alpha=dyn_alpha, beta=dyn_beta, exploration_rate=exploration_rate, rng=rng)
+            path = select_path(G, "M", target, alpha=dyn_alpha, beta=dyn_beta, exploration_rate=exploration_rate, rng=rng, precomputed_paths=aco_paths[target])
             if path:
                 update_pheromone(G, path, rho=dyn_rho)
                 current_paths.append(path)

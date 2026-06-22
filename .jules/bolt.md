@@ -1,0 +1,3 @@
+## 2024-06-25 - Precomputing NetworkX Simple Paths for Dynamic Graphs
+**Learning:** In simulations where the graph topology changes primarily via edge deletions or attribute updates (e.g., link failures, congestion) but nodes remain static, calculating `nx.all_simple_paths` repeatedly inside the simulation loop is a massive performance bottleneck.
+**Action:** Precompute all simple paths on the pristine static base topology *before* any dynamic mutations occur. Pass these precomputed paths into the pathfinding loop and filter them dynamically using `G.has_edge()` to verify the route is still valid.
