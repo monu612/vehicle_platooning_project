@@ -37,6 +37,11 @@ def animate_network(
     rng = random.Random(seed)
     G = create_spider_web_topology(rng=rng)
 
+    try:
+        aco_paths = list(nx.all_simple_paths(G, "M", target_node, cutoff=4))
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        aco_paths = []
+
     pos = nx.spring_layout(G, seed=42, k=2.0)
 
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -55,7 +60,7 @@ def animate_network(
             G[u][v]["weight"] = max(0.5, G[u][v]["weight"] * rng.uniform(0.92, 1.08))
 
         exploration_rate = max(0.05, 0.3 * (1 - frame / steps))
-        path = select_path(G, "M", target_node, exploration_rate=exploration_rate, rng=rng)
+        path = select_path(G, "M", target_node, alpha=1.0, beta=1.0, exploration_rate=exploration_rate, rng=rng, precomputed_paths=aco_paths)
 
         if path:
             update_pheromone(G, path)

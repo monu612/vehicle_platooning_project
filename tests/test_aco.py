@@ -17,7 +17,7 @@ from network import create_spider_web_topology
 def test_select_path_returns_valid_route():
     graph = create_spider_web_topology(seed=123)
 
-    path = select_path(graph, "M", "S6", rng=random.Random(123))
+    path = select_path(graph, "M", "S6", alpha=1.0, beta=1.0, rng=random.Random(123))
 
     assert path is not None
     assert path[0] == "M"
@@ -28,14 +28,14 @@ def test_select_path_returns_valid_route():
 def test_select_path_returns_none_for_missing_node():
     graph = create_spider_web_topology(seed=123)
 
-    assert select_path(graph, "M", "UNKNOWN") is None
+    assert select_path(graph, "M", "UNKNOWN", alpha=1.0, beta=1.0) is None
 
 
 def test_select_path_rejects_invalid_exploration_rate():
     graph = create_spider_web_topology(seed=123)
 
     with pytest.raises(ValueError):
-        select_path(graph, "M", "S6", exploration_rate=1.5)
+        select_path(graph, "M", "S6", alpha=1.0, beta=1.0, exploration_rate=1.5)
 
 
 def test_update_pheromone_increases_edges_on_valid_path():
@@ -118,3 +118,26 @@ def test_deposit_elite_ignores_empty_path():
     deposit_elite(graph, None)
     deposit_elite(graph, [])
     deposit_elite(graph, ["M"])
+def test_select_path_uses_precomputed_paths():
+    graph = create_spider_web_topology(seed=123)
+
+    precomputed = [["M", "S1", "S6"], ["M", "S6"]]
+
+    # "M" -> "S6" shouldn't exist in our original topology, so it'll fail has_edge
+    # Thus only "M" -> "S1" -> "S6" would remain in paths, but we must make sure the nodes exist and the edges exist
+    # Let's add an edge M->S1 and S1->S6 if not exist, and remove M->S6 just in case
+    if not graph.has_edge("M", "S1"):
+        graph.add_edge("M", "S1")
+    if not graph.has_edge("S1", "S6"):
+        graph.add_edge("S1", "S6")
+    if graph.has_edge("M", "S6"):
+        graph.remove_edge("M", "S6")
+
+    path = select_path(
+        graph, "M", "S6", alpha=1.0, beta=1.0,
+        exploration_rate=0.0,  # 0 to deterministically pick path
+        rng=random.Random(123),
+        precomputed_paths=precomputed
+    )
+
+    assert path == ["M", "S1", "S6"]
