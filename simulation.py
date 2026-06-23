@@ -211,6 +211,14 @@ def run_simulation(
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
 
+    # ⚡ Bolt: Precompute static network paths to avoid redundant pathfinding
+    # Precompute all paths on the pristine static topology before loop begins.
+    # We will filter them later in select_path using G.has_edge()
+    precomputed_paths = {
+        dest: list(nx.all_simple_paths(G, "M", dest, cutoff=4))
+        for dest in DESTINATIONS
+    }
+
     for i in range(runs):
         # Create a copy with per-iteration perturbations.
         G_temp = G.copy()
@@ -263,6 +271,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths[destination],
             )
 
             if path:
