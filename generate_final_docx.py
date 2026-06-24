@@ -68,11 +68,9 @@ chapter_map = {
 doc.add_page_break()
 
 image_dir = "/Users/monu/vehicle_platooning_project/output"
-image_index = 1
 chapter_index = 1
 
 def add_md_to_doc(text, doc, chapter_num):
-    global image_index
     lines = text.split('\n')
     in_code_block = False
     code_text = ""
