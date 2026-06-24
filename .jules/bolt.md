@@ -1,0 +1,4 @@
+
+## 2024-05-24 - Precomputing NetworkX Simple Paths for Dynamic Graphs
+**Learning:** Calling `nx.all_simple_paths` repeatedly inside a high-iteration simulation loop where the graph topology is mutated (edges temporarily removed) creates a severe performance bottleneck. NetworkX has to traverse the graph and recreate paths constantly. Furthermore, if you rely on lazy path initialization *after* a perturbation, you might permanently omit paths that happen to be temporarily broken during the initialization pass.
+**Action:** Precompute all required simple paths once on the pristine base graph geometry before running the simulation. Pass these precomputed paths to the selection function, and simply filter them using an O(1) existence check (`G.has_edge`) to see if they are valid in the currently perturbed graph. This provides dramatic performance improvements and ensures paths are not falsely excluded.
