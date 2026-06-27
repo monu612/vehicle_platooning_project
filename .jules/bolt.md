@@ -1,0 +1,3 @@
+## 2024-05-18 - Pathfinding caching in networkx graph with transient failures
+**Learning:** For pathfinding on a dynamic networkx graph, computing `nx.all_simple_paths` repeatedly is very slow and accounts for ~50% of the simulation runtime. When edge failures occur but the node topology remains static, it is highly efficient to pre-calculate all possible simple paths on the pristine static graph and then, during each iteration, simply filter the precomputed paths using `G.has_edge(u, v)` instead of calling the costly generator recursively.
+**Action:** Always pre-calculate simple paths on the initial static graph and pass them to routing functions as a caching mechanism when only edges change state or fail dynamically.
