@@ -207,6 +207,15 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # Static pre-computation for ACO all_simple_paths
+    aco_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            # cutoff=4 matches select_path default
+            aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[destination] = []
+
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                paths=aco_paths.get(destination),
             )
 
             if path:
