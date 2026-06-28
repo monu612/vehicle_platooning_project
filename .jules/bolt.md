@@ -1,0 +1,3 @@
+## 2026-06-28 - Dynamic Graph Pathfinding
+**Learning:** Calling `nx.all_simple_paths` on a dynamically mutating graph every single iteration is incredibly slow. The codebase-specific performance pattern memory indicated we should precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them using `G.has_edge()`. Do not use lazy initialization during a dynamically disrupted state, as it permanently omits paths that are temporarily broken.
+**Action:** When implementing pathfinding that doesn't add nodes, precompute the paths and filter invalid ones rather than searching from scratch every time.
