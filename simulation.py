@@ -199,6 +199,15 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # Pre-compute all simple paths for ACO to avoid redundant nx.all_simple_paths calls.
+    # The topology doesn't gain nodes/edges during simulation, edges are only removed.
+    precomputed_aco_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            precomputed_aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_aco_paths[destination] = []
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_aco_paths.get(destination),
             )
 
             if path:
