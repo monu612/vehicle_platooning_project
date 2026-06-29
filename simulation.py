@@ -201,11 +201,22 @@ def run_simulation(
 
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
+
+    # ⚡ Bolt: Performance optimization
+    # Pre-compute all simple paths up to cutoff=4 on the static topology
+    # to avoid expensive nx.all_simple_paths in the dynamic inner loop.
+    # We filter these by G_temp.has_edge() in select_path.
+    precomputed_all_paths: dict[str, list[list[str]]] = {}
     for destination in DESTINATIONS:
         try:
             baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
+
+        try:
+            precomputed_all_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_all_paths[destination] = []
 
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
@@ -263,6 +274,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_all_paths.get(destination),
             )
 
             if path:

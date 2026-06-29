@@ -1,0 +1,3 @@
+## 2024-05-24 - [Precomputing paths on pristine dynamic graphs]
+**Learning:** For dynamic NetworkX graph simulations where edges drop/re-appear but nodes remain static, computing `nx.all_simple_paths` in the inner loop on the mutated graphs is a major performance bottleneck (O(V!)). The codebase-specific pattern that works is to precompute ALL simple paths on the pristine, static base topology *once* before the simulation starts, and then simply validate those paths using `G_temp.has_edge(u, v)` inside the inner simulation loop.
+**Action:** Next time working with dynamic NetworkX graphs that drop edges but keep nodes, precompute paths on the static base topology and filter them rather than using graph pathfinding algorithms repeatedly in the inner loop.
