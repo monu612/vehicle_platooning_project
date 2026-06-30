@@ -1,0 +1,3 @@
+## 2024-07-01 - [Precompute simple paths on dynamic NetworkX graph]
+**Learning:** Calling `nx.all_simple_paths` on a dynamically mutating graph every simulation iteration is a major bottleneck because it redundantly walks the graph. For routing protocols where nodes are static but edges fail/recover, pathfinding can be optimized significantly.
+**Action:** Precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them using `G.has_edge()` during each dynamically disrupted state. Do not use lazy initialization during a dynamically disrupted state, as it permanently omits paths that are temporarily broken.
