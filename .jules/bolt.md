@@ -1,0 +1,3 @@
+## 2025-02-18 - Precomputing Simple Paths on Networkx Graphs
+**Learning:** For pathfinding on dynamic networkx graphs, computing paths via `nx.all_simple_paths` on a disrupted graph on every simulation iteration is very expensive (O(N^2)). Using lazy initialization inside the simulation loop makes the algorithm permanently omit paths that are only temporarily broken, hurting routing performance.
+**Action:** Always precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter these paths using `G.has_edge()` during the dynamic phase. This turns an expensive graph traversal into a fast iterative check.
