@@ -1,0 +1,3 @@
+## 2026-07-04 - Precomputing Paths Before Dynamic Graph Mutations
+**Learning:** In simulations involving a static node topology but dynamic edge availability (e.g., node link failures via `G.remove_edge()`), recalculating `nx.all_simple_paths` on the dynamically mutating graph during every iteration is a massive performance bottleneck. The overhead of repeatedly traversing the graph dynamically outweighs simpler pathfinding filtering.
+**Action:** Always precompute simple paths on the pristine static master topology *before* the simulation loop or dynamic mutations begin. Then, dynamically filter the precomputed paths based on the real-time presence of required edges (`G.has_edge()`).
