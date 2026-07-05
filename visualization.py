@@ -9,7 +9,7 @@ import networkx as nx
 from matplotlib.animation import FuncAnimation
 
 from network import create_spider_web_topology
-from aco import select_path, update_pheromone, evaporate_all
+from aco import select_path, update_pheromone, evaporate_all, MAX_PATH_LENGTH
 
 
 # --- Dark palette ---
@@ -37,6 +37,11 @@ def animate_network(
     rng = random.Random(seed)
     G = create_spider_web_topology(rng=rng)
 
+    try:
+        precomputed_paths = list(nx.all_simple_paths(G, "M", target_node, cutoff=MAX_PATH_LENGTH))
+    except (nx.NetworkXNoPath, nx.NodeNotFound):
+        precomputed_paths = []
+
     pos = nx.spring_layout(G, seed=42, k=2.0)
 
     fig, ax = plt.subplots(figsize=(9, 6))
@@ -55,7 +60,7 @@ def animate_network(
             G[u][v]["weight"] = max(0.5, G[u][v]["weight"] * rng.uniform(0.92, 1.08))
 
         exploration_rate = max(0.05, 0.3 * (1 - frame / steps))
-        path = select_path(G, "M", target_node, exploration_rate=exploration_rate, rng=rng)
+        path = select_path(G, "M", target_node, alpha=1.0, beta=1.0, exploration_rate=exploration_rate, rng=rng, precomputed_paths=precomputed_paths)
 
         if path:
             update_pheromone(G, path)
