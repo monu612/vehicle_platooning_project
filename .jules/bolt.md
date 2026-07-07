@@ -1,0 +1,3 @@
+## 2024-05-24 - Precomputing Paths for Dynamic Graphs
+**Learning:** For pathfinding on the dynamic networkx graph, precomputing simple paths on the pristine static base topology *before* any dynamic mutations occur, and filtering them using `G.has_edge()` during iterations significantly reduces redundant pathfinding calls. Calling `nx.all_simple_paths` repeatedly on slightly mutated versions of the graph per destination per iteration is extremely expensive.
+**Action:** When working with ACO and dynamic graph iterations, precompute static paths during setup if the graph mutations only involve removing edges or altering weights on the existing topology.
