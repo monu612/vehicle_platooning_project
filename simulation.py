@@ -10,7 +10,7 @@ import networkx as nx
 
 from aco import (
     select_path, update_pheromone, evaporate_all, deposit_elite,
-    get_network_state, adaptive_parameters
+    get_network_state, adaptive_parameters, MAX_PATH_LENGTH
 )
 from network import create_spider_web_topology
 
@@ -199,6 +199,14 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # Pre-compute static simple paths for ACO to filter dynamically
+    precomputed_aco_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            precomputed_aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=MAX_PATH_LENGTH))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_aco_paths[destination] = []
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -263,6 +271,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_aco_paths.get(destination),
             )
 
             if path:

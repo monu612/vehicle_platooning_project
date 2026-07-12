@@ -17,7 +17,7 @@ from network import create_spider_web_topology
 def test_select_path_returns_valid_route():
     graph = create_spider_web_topology(seed=123)
 
-    path = select_path(graph, "M", "S6", rng=random.Random(123))
+    path = select_path(graph, "M", "S6", alpha=1.0, beta=1.0, rng=random.Random(123))
 
     assert path is not None
     assert path[0] == "M"
@@ -28,14 +28,14 @@ def test_select_path_returns_valid_route():
 def test_select_path_returns_none_for_missing_node():
     graph = create_spider_web_topology(seed=123)
 
-    assert select_path(graph, "M", "UNKNOWN") is None
+    assert select_path(graph, "M", "UNKNOWN", alpha=1.0, beta=1.0) is None
 
 
 def test_select_path_rejects_invalid_exploration_rate():
     graph = create_spider_web_topology(seed=123)
 
     with pytest.raises(ValueError):
-        select_path(graph, "M", "S6", exploration_rate=1.5)
+        select_path(graph, "M", "S6", alpha=1.0, beta=1.0, exploration_rate=1.5)
 
 
 def test_update_pheromone_increases_edges_on_valid_path():
@@ -118,3 +118,21 @@ def test_deposit_elite_ignores_empty_path():
     deposit_elite(graph, None)
     deposit_elite(graph, [])
     deposit_elite(graph, ["M"])
+
+def test_select_path_uses_precomputed_paths():
+    graph = create_spider_web_topology(seed=123)
+    precomputed = list(nx.all_simple_paths(graph, "M", "S6", cutoff=4))
+
+    # Remove a critical edge to ensure it gets filtered out
+    graph.remove_edge("M", "S1")
+
+    path = select_path(
+        graph, "M", "S6", alpha=1.0, beta=1.0, rng=random.Random(123),
+        precomputed_paths=precomputed
+    )
+
+    assert path is not None
+    assert path[0] == "M"
+    assert path[-1] == "S6"
+    assert "S1" not in path or "M" not in path or path[path.index("M") + 1] != "S1"
+    assert all(graph.has_edge(source, target) for source, target in zip(path, path[1:]))

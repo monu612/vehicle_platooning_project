@@ -1,0 +1,3 @@
+## 2024-07-13 - [Precomputing paths on the static base topology]
+**Learning:** In the network routing simulation, dynamic pathfinding with `nx.all_simple_paths` on the dynamically mutated graph (`G_temp`) is a significant bottleneck. Because the nodes do not change, only edge attributes and edge existence, paths can be precomputed on the static `G` and simply filtered for active edges.
+**Action:** When finding paths on a dynamic graph where only edges fail/change, precompute simple paths on the pristine static topology before any dynamic mutations occur, and filter them during path selection by verifying consecutive edges exist (`all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).
