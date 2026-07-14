@@ -1,0 +1,3 @@
+## 2024-05-23 - Precomputing Network Paths
+**Learning:** For pathfinding on dynamic networkx graphs where edges are removed/mutated per iteration, calling `nx.all_simple_paths` repeatedly on the mutated graph is a severe performance bottleneck. Lazy initialization on the disrupted graph is an anti-pattern as it omits paths that are temporarily broken but might be viable in other iterations.
+**Action:** Precompute all simple paths on the pristine static base topology *before* dynamic mutations occur. Filter these paths per iteration by verifying every consecutive edge exists using `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`.

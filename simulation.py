@@ -10,7 +10,7 @@ import networkx as nx
 
 from aco import (
     select_path, update_pheromone, evaporate_all, deposit_elite,
-    get_network_state, adaptive_parameters
+    get_network_state, adaptive_parameters, MAX_PATH_LENGTH
 )
 from network import create_spider_web_topology
 
@@ -207,6 +207,16 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # Precompute all simple paths for ACO to avoid nx.all_simple_paths overhead in every iteration
+    # See .jules/bolt.md: Precomputing on the pristine static topology avoids omitting paths
+    # that are only temporarily broken during dynamic disruptions.
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            precomputed_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=MAX_PATH_LENGTH))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_paths[destination] = []
+
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
@@ -263,6 +273,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths.get(destination),
             )
 
             if path:
