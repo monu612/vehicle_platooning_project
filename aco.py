@@ -7,6 +7,7 @@ from collections.abc import Sequence
 import networkx as nx
 
 
+MAX_PATH_LENGTH = 4
 MIN_EDGE_COST = 1e-9
 
 # MMAS bounds — prevents stagnation and premature convergence.
@@ -102,19 +103,26 @@ def select_path(
     alpha: float,
     beta: float,
     exploration_rate: float = 0.3,
-    cutoff: int = 4,
+    cutoff: int = MAX_PATH_LENGTH,
     rng: random.Random | None = None,
-) -> list[str] | None:
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
+) -> Sequence[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
         raise ValueError("exploration_rate must be between 0 and 1.")
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        paths = [
+            path for path in precomputed_paths
+            if all(G.has_edge(u, v) for u, v in zip(path, path[1:]))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None

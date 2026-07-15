@@ -1,0 +1,3 @@
+## 2024-05-18 - Precomputing Simple Paths on Dynamic Graphs
+**Learning:** Running `nx.all_simple_paths` repeatedly on a dynamically mutating graph is a major performance bottleneck. For pathfinding on dynamic networkx graphs where the topology changes but nodes remain static, it is significantly faster to precompute simple paths on the pristine static base topology *before* any dynamic mutations occur.
+**Action:** Precompute paths once on the initial graph, then during iteration, filter these precomputed paths by verifying that every consecutive edge still exists in the mutated graph (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).
