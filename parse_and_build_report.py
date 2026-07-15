@@ -11,7 +11,7 @@ with open(md_file, "r") as f:
 # Extract sections
 sections = re.split(r'\n# SECTION \d+ — [^\n]+', md_text)
 titles = re.findall(r'\n# SECTION \d+ — ([^\n]+)', md_text)
-titles = ["INTRO"] + titles # section[0] is title/intro
+titles = ["INTRO"] + titles  # section[0] is title/intro
 
 content_by_section = dict(zip(titles, sections))
 print("Sections extracted:", titles)
