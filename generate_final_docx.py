@@ -15,6 +15,7 @@ with open(md_file, "r") as f:
 # Load document
 doc = Document(template_docx)
 
+
 def replace_in_doc(doc, search_text, replace_text):
     for p in doc.paragraphs:
         if search_text in p.text:
@@ -31,11 +32,14 @@ def replace_in_doc(doc, search_text, replace_text):
                     if search_text in p.text:
                         for r in p.runs:
                             if search_text in r.text:
-                                r.text = r.text.replace(search_text, replace_text)
+                                r.text = r.text.replace(
+                                    search_text, replace_text)
                         if search_text in p.text:
                             p.text = p.text.replace(search_text, replace_text)
 
 # Replace all template placeholders
+
+
 replacements = {
     "TITLE OF THE PROJECT": "Adaptive Smart ACO Based Robust Communication for Vehicle Platooning using Spider-Web Topology",
     "Student Name (Roll Number)": "Monu (Final Year)",
@@ -65,18 +69,19 @@ chapter_map = {
     "Appendices": ["HOW TO BUILD FROM SCRATCH", "VIVA PREPARATION", "RESEARCH DEPTH"]
 }
 
+
 doc.add_page_break()
 
 image_dir = "/Users/monu/vehicle_platooning_project/output"
 image_index = 1
 chapter_index = 1
 
+
 def add_md_to_doc(text, doc, chapter_num):
-    global image_index
     lines = text.split('\n')
     in_code_block = False
     code_text = ""
-    
+
     for line in lines:
         if line.startswith('```'):
             if in_code_block:
@@ -90,7 +95,7 @@ def add_md_to_doc(text, doc, chapter_num):
             else:
                 in_code_block = True
             continue
-            
+
         if in_code_block:
             code_text += line + "\n"
             continue
@@ -102,14 +107,14 @@ def add_md_to_doc(text, doc, chapter_num):
         elif line.startswith('# '):
             doc.add_heading(line.replace('# ', '').strip(), level=2)
         elif line.strip().startswith('|') and '|---' in line:
-            continue # simple skip of markdown table separator
+            continue  # simple skip of markdown table separator
         elif line.strip().startswith('|'):
             # simple representation of table rows as text
             doc.add_paragraph(line.strip().replace('|', '  '))
         elif line.strip().startswith('- ') or line.strip().startswith('* '):
             p = doc.add_paragraph('• ' + line.strip()[2:])
         elif re.match(r'^\d+\.\s', line.strip()):
-            p = doc.add_paragraph(line.strip(),  )
+            p = doc.add_paragraph(line.strip())
         elif line.strip():
             # Bold parsing
             p = doc.add_paragraph()
@@ -121,25 +126,33 @@ def add_md_to_doc(text, doc, chapter_num):
                 else:
                     p.add_run(part)
 
+
 for chapter_name, section_titles in chapter_map.items():
     doc.add_heading(chapter_name, level=1)
     for title in section_titles:
         if title in sections:
             doc.add_heading(title, level=2)
             add_md_to_doc(sections[title], doc, chapter_index)
-            
+
             # Special image injection based on chapter content
             if "UI DESIGN" in title:
-                img_path = os.path.join(image_dir, "latency_graph.png") # UI placeholder
+                img_path = os.path.join(
+                    image_dir, "latency_graph.png")  # UI placeholder
                 doc.add_paragraph("Figure: Vehicle Communication Dashboard UI")
             if "PERFORMANCE METRICS" in title:
                 for img, caption in [
-                    ("latency_graph.png", f"Figure {chapter_index}.1: Latency Comparison (ACO vs Baseline)"),
-                    ("pdr_graph.png", f"Figure {chapter_index}.2: Packet Delivery Ratio"),
-                    ("redundancy_graph.png", f"Figure {chapter_index}.3: Network Redundancy"),
-                    ("convergence.png", f"Figure {chapter_index}.4: Pheromone Convergence"),
-                    ("latency_distribution.png", f"Figure {chapter_index}.5: Latency Distribution"),
-                    ("sensitivity.png", f"Figure {chapter_index}.6: ACO Parameter Sensitivity")
+                    ("latency_graph.png",
+                     f"Figure {chapter_index}.1: Latency Comparison (ACO vs Baseline)"),
+                    ("pdr_graph.png",
+                     f"Figure {chapter_index}.2: Packet Delivery Ratio"),
+                    ("redundancy_graph.png",
+                     f"Figure {chapter_index}.3: Network Redundancy"),
+                    ("convergence.png",
+                     f"Figure {chapter_index}.4: Pheromone Convergence"),
+                    ("latency_distribution.png",
+                     f"Figure {chapter_index}.5: Latency Distribution"),
+                    ("sensitivity.png",
+                     f"Figure {chapter_index}.6: ACO Parameter Sensitivity")
                 ]:
                     img_p = os.path.join(image_dir, img)
                     if os.path.exists(img_p):
@@ -147,6 +160,7 @@ for chapter_name, section_titles in chapter_map.items():
                         p = doc.add_paragraph(caption)
                         p.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
     chapter_index += 1
+
 
 doc.save(output_docx)
 print("Saved DOCX to:", output_docx)

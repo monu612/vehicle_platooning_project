@@ -9,6 +9,7 @@ from typing import Sequence
 import networkx as nx
 
 from aco import (
+    MAX_PATH_LENGTH,
     select_path, update_pheromone, evaporate_all, deposit_elite,
     get_network_state, adaptive_parameters
 )
@@ -102,7 +103,7 @@ def _validate_inputs(runs: int, failure_rate: float, congestion_factor: float) -
         raise ValueError("congestion_factor must be greater than or equal to 1.")
 
 
-def _path_latency(G: nx.Graph, path: list[str]) -> float:
+def _path_latency(G: nx.Graph, path: Sequence[str]) -> float:
     return sum(float(G[s][t].get("weight", 1.0)) for s, t in zip(path, path[1:]))
 
 
@@ -201,11 +202,17 @@ def run_simulation(
 
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
+    aco_paths: dict[str, Sequence[Sequence[str]]] = {}
     for destination in DESTINATIONS:
         try:
             baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
+
+        try:
+            aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=MAX_PATH_LENGTH))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[destination] = []
 
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
@@ -263,6 +270,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=aco_paths[destination],
             )
 
             if path:
