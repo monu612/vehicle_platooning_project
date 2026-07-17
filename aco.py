@@ -13,6 +13,8 @@ MIN_EDGE_COST = 1e-9
 PHEROMONE_MIN = 0.1
 PHEROMONE_MAX = 10.0
 
+MAX_PATH_LENGTH = 4
+
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
@@ -102,19 +104,32 @@ def select_path(
     alpha: float,
     beta: float,
     exploration_rate: float = 0.3,
-    cutoff: int = 4,
+    cutoff: int = MAX_PATH_LENGTH,
     rng: random.Random | None = None,
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
-    """Select a route using ant-colony pheromone and edge quality metrics."""
+    """Select a route using ant-colony pheromone and edge quality metrics.
+
+    Performance optimization: Accepts precomputed paths (calculated on the base topology)
+    and filters them based on current edge existence, avoiding expensive dynamic graph
+    pathfinding (nx.all_simple_paths) during simulation iterations.
+    """
     if not 0.0 <= exploration_rate <= 1.0:
         raise ValueError("exploration_rate must be between 0 and 1.")
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        # Filter precomputed paths to ensure all consecutive edges exist in the current graph
+        paths = [
+            list(path) for path in precomputed_paths
+            if all(G.has_edge(u, v) for u, v in zip(path, path[1:]))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
