@@ -1,0 +1,3 @@
+## 2026-07-17 - [Pathfinding during dynamic network mutations]
+**Learning:** For pathfinding on the dynamic networkx graph, it's significantly faster to precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them by verifying every consecutive edge exists (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`). Calling `nx.all_simple_paths` repeatedly inside the iteration loop takes up most of the time because it searches the graph dynamically.
+**Action:** When a static base topology is present but edge attributes (and existence) change during iteration, compute paths on the base topology once before the loop, and then just filter paths checking for edge existence when using them during iteration.
