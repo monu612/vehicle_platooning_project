@@ -10,7 +10,7 @@ import networkx as nx
 from matplotlib.animation import FuncAnimation
 
 from network import create_spider_web_topology
-from aco import select_path, update_pheromone, evaporate_all, get_network_state, adaptive_parameters
+from aco import select_path, update_pheromone, evaporate_all, get_network_state, adaptive_parameters, MAX_PATH_LENGTH
 
 
 # --- Dark palette ---
@@ -43,6 +43,14 @@ def animate_realistic(
     pos = {n: [float(p[0]) * 5 + 5, float(p[1]) * 5 + 5] for n, p in pos.items()}
 
     path_history: list[list[str]] = []
+
+    # Pre-compute all simple paths for ACO to avoid redundant computation per-frame.
+    aco_paths: dict[str, list[list[str]]] = {}
+    for target in ["S1", "S2", "S3", "S4", "S5", "S6"]:
+        try:
+            aco_paths[target] = list(nx.all_simple_paths(G, "M", target, cutoff=MAX_PATH_LENGTH))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[target] = []
 
     fig, ax = plt.subplots(figsize=(10, 7))
     fig.patch.set_facecolor(BG_COLOR)
@@ -79,7 +87,7 @@ def animate_realistic(
         exploration_rate = max(0.05, 0.3 * (1 - frame / steps))
         current_paths: list[list[str]] = []
         for target in ["S1", "S2", "S3", "S4", "S5", "S6"]:
-            path = select_path(G, "M", target, alpha=dyn_alpha, beta=dyn_beta, exploration_rate=exploration_rate, rng=rng)
+            path = select_path(G, "M", target, alpha=dyn_alpha, beta=dyn_beta, exploration_rate=exploration_rate, rng=rng, precomputed_paths=aco_paths[target])
             if path:
                 update_pheromone(G, path, rho=dyn_rho)
                 current_paths.append(path)
