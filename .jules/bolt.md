@@ -1,0 +1,3 @@
+## 2024-05-24 - Precomputing NetworkX Simple Paths for Static Nodes
+**Learning:** Calling `nx.all_simple_paths` repeatedly inside a simulation loop on a dynamically changing graph is a massive performance bottleneck, taking up the majority of execution time.
+**Action:** For pathfinding on dynamic networkx graphs where nodes are static but edges fail, precompute all simple paths on the pristine static base topology *before* the simulation starts. Then, during the simulation, quickly filter the precomputed paths by verifying every consecutive edge exists (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).

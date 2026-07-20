@@ -16,6 +16,7 @@ from network import create_spider_web_topology
 
 
 DESTINATIONS = ("S1", "S2", "S3", "S4", "S5", "S6")
+MAX_PATH_LENGTH = 4
 
 
 # ---------------------------------------------------------------------------
@@ -199,6 +200,14 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # Pre-compute static paths for ACO routing
+    aco_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=MAX_PATH_LENGTH))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[destination] = []
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=aco_paths[destination],
             )
 
             if path:
