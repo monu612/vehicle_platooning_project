@@ -1,0 +1,3 @@
+## 2026-07-21 - [Precompute Valid Paths in Dynamic Networkx Simulation]
+**Learning:** For pathfinding on dynamic networkx graphs where the topology changes per iteration through edge removal, calling `nx.all_simple_paths` on every perturbed graph is extremely slow and causes a massive bottleneck.
+**Action:** Instead of re-enumerating paths dynamically, precompute all simple paths on the pristine static baseline topology *before* the simulation loop. Pass these baseline paths to the per-iteration path selection and filter them by checking `all(G_temp.has_edge(u, v) for u, v in zip(path, path[1:]))` for validity against the perturbed graph.
