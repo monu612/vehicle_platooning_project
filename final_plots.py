@@ -84,7 +84,6 @@ def _save_convergence_plot(
 ) -> Path:
     """Plot PDR and latency per iteration to show ACO learning over time."""
     history = result.history
-    iters = list(range(1, len(history) + 1))
 
     # Smooth with a rolling window
     window = max(1, len(history) // 20)

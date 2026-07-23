@@ -12,7 +12,7 @@ import tkinter as tk
 import matplotlib
 matplotlib.use("TkAgg")
 
-import matplotlib.pyplot as plt
+
 import networkx as nx
 import numpy as np
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg

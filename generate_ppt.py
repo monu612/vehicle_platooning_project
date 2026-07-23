@@ -139,9 +139,6 @@ math_red = render_math(r"Redundancy = \frac{\sum H_i}{m}", "math_red.png")
 def render_bar_chart(title, values, filename):
     fig, ax = plt.subplots(figsize=(6, 4), facecolor=BG_COLOR)
     ax.set_facecolor(BG_COLOR)
-    labels = ["Baseline", "Classical ACO", "AS-ACO"]
-    colors = ["gray", "white", CYAN]
-    bars = ax.bar(labels, values, color=colors)
     ax.set_title(title, color='white', fontsize=16, pad=20)
     ax.tick_params(colors='white')
     for spine in ax.spines.values():

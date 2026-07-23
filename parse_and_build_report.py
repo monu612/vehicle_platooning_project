@@ -1,7 +1,4 @@
 import re
-from docx import Document
-from docx.shared import Inches, Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 
 md_file = "/Users/monu/vehicle_platooning_project/report_source.md"
 
