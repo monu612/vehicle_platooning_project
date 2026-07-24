@@ -13,6 +13,8 @@ MIN_EDGE_COST = 1e-9
 PHEROMONE_MIN = 0.1
 PHEROMONE_MAX = 10.0
 
+MAX_PATH_LENGTH = 4
+
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
@@ -102,8 +104,9 @@ def select_path(
     alpha: float,
     beta: float,
     exploration_rate: float = 0.3,
-    cutoff: int = 4,
+    cutoff: int = MAX_PATH_LENGTH,
     rng: random.Random | None = None,
+    paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -111,27 +114,34 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if paths is None:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
+    else:
+        valid_paths = []
+        for p in paths:
+            if all(G.has_edge(u, v) for u, v in zip(p, p[1:])):
+                valid_paths.append(list(p))
+        paths = valid_paths
 
     if not paths:
         return None
 
     if rng.random() < exploration_rate:
-        return rng.choice(paths)
+        return list(rng.choice(paths))
 
     scores = [_path_score(G, path, alpha, beta) for path in paths]
 
     total = sum(scores)
 
     if total <= 0:
-        return rng.choice(paths)
+        return list(rng.choice(paths))
 
     probabilities = [s / total for s in scores]
 
-    return rng.choices(paths, weights=probabilities, k=1)[0]
+    return list(rng.choices(paths, weights=probabilities, k=1)[0])
 
 
 def update_pheromone(
