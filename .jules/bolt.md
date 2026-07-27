@@ -1,0 +1,3 @@
+## 2024-07-27 - Precomputing Paths on Dynamic Networkx Graphs
+**Learning:** Found a major performance bottleneck where `nx.all_simple_paths` was being called inside a loop on a dynamically changing graph (where edges are randomly removed). Because NetworkX recomputes the generator from scratch every time, it's extremely slow for repetitive routing.
+**Action:** When pathfinding on a dynamic networkx graph with static nodes but changing edges, precompute all simple paths on the pristine static base topology *before* any dynamic mutations occur. During the simulation loop, use these precomputed paths and filter them by checking if every consecutive edge exists in the current dynamic graph (`all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).
