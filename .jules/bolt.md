@@ -1,0 +1,3 @@
+## 2026-07-28 - Precomputing Simple Paths on Dynamic Topologies
+**Learning:** In networkx, repeatedly calling `nx.all_simple_paths` on a dynamically changing graph in every iteration is a major performance bottleneck, accounting for nearly 40% of runtime in ACO path selection. Lazy evaluation during dynamic mutation phases permanently drops paths that are only temporarily broken.
+**Action:** Precompute the master list of all simple paths on the pristine static topology *before* any dynamic link failures or mutations occur. In each simulation iteration, iterate through the precomputed list and filter out paths where any sequential edge currently lacks a connection using `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`.
