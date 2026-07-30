@@ -141,7 +141,7 @@ def render_bar_chart(title, values, filename):
     ax.set_facecolor(BG_COLOR)
     labels = ["Baseline", "Classical ACO", "AS-ACO"]
     colors = ["gray", "white", CYAN]
-    bars = ax.bar(labels, values, color=colors)
+    ax.bar(labels, values, color=colors)
     ax.set_title(title, color='white', fontsize=16, pad=20)
     ax.tick_params(colors='white')
     for spine in ax.spines.values():
@@ -171,7 +171,7 @@ def add_title(slide, text):
     tf.text = text
     p = tf.paragraphs[0]
     p.font.size = Pt(44)
-    p.font.color.rgb = RGBColor(0, 255, 255) # Cyan
+    p.font.color.rgb = RGBColor(0, 255, 255)  # Cyan
     p.font.bold = True
 
 def add_bullets(slide, items, left=0.5, top=1.8, width=6, height=5):
