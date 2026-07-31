@@ -1,0 +1,3 @@
+## 2024-10-24 - Precomputing NetworkX Simple Paths on Static Topologies
+**Learning:** For pathfinding on the dynamic networkx graph, precomputing simple paths on the pristine static base topology *before* any dynamic mutations occur, and filtering them by verifying every consecutive edge exists, is significantly faster than using `nx.all_simple_paths` on a disrupted network on each iteration.
+**Action:** When working with dynamic topologies in NetworkX where nodes remain static but edges fail, precompute all valid paths using the static base topology, and filter them during iterations rather than repeatedly calling pathfinding algorithms.
