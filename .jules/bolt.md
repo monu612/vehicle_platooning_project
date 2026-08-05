@@ -1,0 +1,3 @@
+## 2025-08-05 - Precompute Static Paths and Filter Dynamically
+**Learning:** For pathfinding on the dynamic networkx graph, dynamically evaluating `nx.all_simple_paths` on mutated subgraphs is a major performance bottleneck (taking significant time during ACO iterations). Since the node topology remains static and only edges change/fail, it is much faster to precompute the simple paths on the pristine static graph and filter them down dynamically by checking if all edges still exist (`all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).
+**Action:** When finding paths on a graph where only edges are mutated (removed/re-added/weighted) but nodes are static, precompute paths on the static base topology and filter on the fly during dynamic simulation steps.
