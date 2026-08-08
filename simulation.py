@@ -201,11 +201,22 @@ def run_simulation(
 
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
+
+    # ⚡ Bolt: Precompute all valid paths on the static base topology for O(1) retrieval
+    # instead of recalculating nx.all_simple_paths on the mutated graph every iteration.
+    from aco import MAX_PATH_LENGTH
+    precomputed_aco_paths: dict[str, list[list[str]]] = {}
+
     for destination in DESTINATIONS:
         try:
             baseline_paths[destination] = nx.shortest_path(G, "M", destination, weight="weight")
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
+
+        try:
+            precomputed_aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=MAX_PATH_LENGTH))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_aco_paths[destination] = []
 
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
@@ -263,6 +274,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_aco_paths.get(destination, []),
             )
 
             if path:
