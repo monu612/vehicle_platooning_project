@@ -1,0 +1,4 @@
+## 2026-08-08 - Pathfinding optimization on dynamic NetworkX graph
+**Learning:** In a dynamic graph simulation where topology mutations occur (edges are removed to simulate failures), calculating `nx.all_simple_paths` on every single iteration during pathfinding (e.g. `select_path` for ACO) creates a severe performance bottleneck. This happens because `nx.all_simple_paths` operates on the mutated graph each time, taking up >60% of the simulation CPU time.
+
+**Action:** Precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them at runtime by verifying every consecutive edge in the path exists (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`). Never use lazy initialization during a dynamically disrupted state, as it permanently omits paths that might only be temporarily broken.
