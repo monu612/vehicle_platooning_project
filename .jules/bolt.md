@@ -1,0 +1,3 @@
+## 2026-08-09 - [Precomputing Paths on Dynamic NetworkX Graphs]
+**Learning:** NetworkX's `all_simple_paths` is extremely slow when repeatedly called in a tight loop on a dynamically changing graph topology during a simulation. Because the application disrupts the topology by deleting edges (not nodes), we can't lazily cache paths per-iteration.
+**Action:** Precompute all simple paths once on the pristine static base topology *before* any dynamic mutations occur. Inside the iteration loop, filter these precomputed paths by verifying every consecutive edge still exists in the disrupted graph (`all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`). This drastically reduces overhead.
