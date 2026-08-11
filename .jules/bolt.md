@@ -1,0 +1,3 @@
+## 2024-05-24 - Precomputing Dynamic Networkx Paths
+**Learning:** For pathfinding on a dynamic networkx graph, computing paths during dynamic state mutations (`nx.all_simple_paths`) is incredibly slow because the function traverses the graph inside hot loops. Using lazy initialization inside the dynamic loop is an anti-pattern as it permanently omits paths that are temporarily broken due to transient edge failures.
+**Action:** Always precompute simple paths on the pristine static base topology before any dynamic mutations occur. Inside the dynamic loops, filter these precomputed paths by verifying every consecutive edge still exists (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).
