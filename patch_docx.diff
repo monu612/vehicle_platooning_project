@@ -1,0 +1,8 @@
+<<<<<<< SEARCH
+def add_md_to_doc(text, doc, chapter_num):
+    global image_index
+    lines = text.split('\n')
+=======
+def add_md_to_doc(text, doc, chapter_num):
+    lines = text.split('\n')
+>>>>>>> REPLACE
