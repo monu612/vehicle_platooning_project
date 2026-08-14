@@ -77,22 +77,36 @@ def _path_score(
     alpha: float,
     beta: float,
 ) -> float:
-    pheromone = 1.0
-    heuristic = 1.0
+    score = 1.0
 
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        # Inlined _edge_metric logic for performance
+        weight_val = float(edge.get("weight", 1.0))
+        latency = weight_val if weight_val >= MIN_EDGE_COST else MIN_EDGE_COST
+
+        cong_val = float(edge.get("congestion", 1.0))
+        congestion = cong_val if cong_val >= MIN_EDGE_COST else MIN_EDGE_COST
+
+        rel_val = float(edge.get("reliability", 1.0))
+        reliability = rel_val if rel_val >= MIN_EDGE_COST else MIN_EDGE_COST
+        if reliability > 1.0:
+            reliability = 1.0
+
+        pher_val = float(edge.get("pheromone", 1.0))
+        edge_pheromone = pher_val if pher_val >= MIN_EDGE_COST else MIN_EDGE_COST
 
         effective_cost = latency * congestion
-        heuristic *= (reliability / effective_cost) ** beta
-        pheromone *= edge_pheromone ** alpha
+        heuristic = (reliability / effective_cost) ** beta
+        pheromone = edge_pheromone ** alpha
 
-    score = pheromone * heuristic
+        score *= (pheromone * heuristic)
+
     return score if math.isfinite(score) and score > 0 else 0.0
+
+
+MAX_PATH_LENGTH = 4
 
 
 def select_path(
@@ -102,8 +116,9 @@ def select_path(
     alpha: float,
     beta: float,
     exploration_rate: float = 0.3,
-    cutoff: int = 4,
+    cutoff: int = MAX_PATH_LENGTH,
     rng: random.Random | None = None,
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -111,10 +126,16 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        paths = [
+            list(p) for p in precomputed_paths
+            if all(G.has_edge(u, v) for u, v in zip(p, p[1:]))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
