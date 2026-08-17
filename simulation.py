@@ -9,6 +9,7 @@ from typing import Sequence
 import networkx as nx
 
 from aco import (
+    MAX_PATH_LENGTH,
     select_path, update_pheromone, evaporate_all, deposit_elite,
     get_network_state, adaptive_parameters
 )
@@ -207,6 +208,10 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        precomputed_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=MAX_PATH_LENGTH))
+
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
@@ -263,6 +268,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                paths=precomputed_paths[destination],
             )
 
             if path:
