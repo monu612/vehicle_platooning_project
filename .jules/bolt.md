@@ -1,3 +1,0 @@
-## 2024-10-24 - Pre-computing Simple Paths
-**Learning:** For pathfinding on the dynamic networkx graph, precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them by verifying every consecutive edge exists (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`). Do not use lazy initialization during a dynamically disrupted state, as it permanently omits paths that are temporarily broken.
-**Action:** When working on dynamic topologies with networkx, precompute static structures like all simple paths on the base graph once, then filter on each iteration based on the mutated graph's present edges to drastically speed up simulation runs.
