@@ -1,0 +1,3 @@
+## 2026-08-20 - [NetworkX dynamic pathfinding optimization]
+**Learning:** `nx.all_simple_paths` is extremely slow when called in a loop (like `select_path` which gets called hundreds of times for routing decisions) on a dynamic graph.
+**Action:** The memory provides the exact codebase-specific performance pattern: "For pathfinding on the dynamic networkx graph, precompute simple paths on the pristine static base topology *before* any dynamic mutations occur, and filter them by verifying every consecutive edge exists (e.g., `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`). Do not use lazy initialization during a dynamically disrupted state, as it permanently omits paths that are temporarily broken."
