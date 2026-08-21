@@ -199,6 +199,15 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # Precompute all simple paths up to cutoff for ACO filtering
+    cutoff = config.cutoff if config and hasattr(config, "cutoff") else 4
+    precomputed_all_paths: dict[str, list[list[str]]] = {}
+    for dest in DESTINATIONS:
+        try:
+            precomputed_all_paths[dest] = list(nx.all_simple_paths(G, "M", dest, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_all_paths[dest] = []
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                paths=precomputed_all_paths.get(destination, []),
             )
 
             if path:

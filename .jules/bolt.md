@@ -1,0 +1,3 @@
+## 2024-05-30 - ACO Pathfinding Bottleneck
+**Learning:** Calling `nx.all_simple_paths` repeatedly inside the core loop (`select_path`) on a static node topology causes significant overhead. The dynamic topology mutations only involve edge removals (link failures) and attribute updates, which means we can precompute the simple paths on the pristine static base topology and filter them by verifying every consecutive edge exists.
+**Action:** Precompute paths outside the hot loop (or memoize them per source-target-cutoff) and filter them during dynamic states instead of regenerating all paths from scratch.
