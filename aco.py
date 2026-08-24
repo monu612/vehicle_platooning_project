@@ -80,7 +80,10 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    for source, target in zip(path, path[1:]):
+    # Optimization: index-based loop avoids memory allocation from list slicing and zip overhead
+    for i in range(len(path) - 1):
+        source = path[i]
+        target = path[i + 1]
         edge = G[source][target]
         latency = _edge_metric(edge, "weight", 1.0)
         congestion = _edge_metric(edge, "congestion", 1.0)
@@ -150,7 +153,10 @@ def update_pheromone(
     edges = []
     total_latency = 0.0
 
-    for source, target in zip(path, path[1:]):
+    # Optimization: index-based loop avoids memory allocation from list slicing and zip overhead
+    for i in range(len(path) - 1):
+        source = path[i]
+        target = path[i + 1]
         if not G.has_edge(source, target):
             return 0.0
 
@@ -192,7 +198,10 @@ def deposit_elite(
 
     total_latency = 0.0
     edges = []
-    for source, target in zip(best_path, best_path[1:]):
+    # Optimization: index-based loop avoids memory allocation from list slicing and zip overhead
+    for i in range(len(best_path) - 1):
+        source = best_path[i]
+        target = best_path[i + 1]
         if not G.has_edge(source, target):
             return
         edges.append((source, target))

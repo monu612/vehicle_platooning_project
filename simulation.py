@@ -103,7 +103,8 @@ def _validate_inputs(runs: int, failure_rate: float, congestion_factor: float) -
 
 
 def _path_latency(G: nx.Graph, path: list[str]) -> float:
-    return sum(float(G[s][t].get("weight", 1.0)) for s, t in zip(path, path[1:]))
+    # Optimization: index-based loop avoids memory allocation from list slicing and zip overhead
+    return sum(float(G[path[i]][path[i+1]].get("weight", 1.0)) for i in range(len(path) - 1))
 
 
 def _mean(values: Sequence[float]) -> float:
@@ -285,7 +286,10 @@ def run_simulation(
             if base_path:
                 valid = True
                 total_latency_base = 0.0
-                for source, target in zip(base_path, base_path[1:]):
+                # Optimization: index-based loop avoids memory allocation from list slicing and zip overhead
+                for i in range(len(base_path) - 1):
+                    source = base_path[i]
+                    target = base_path[i + 1]
                     if G_temp.has_edge(source, target):
                         total_latency_base += float(G_temp[source][target].get("weight", 1.0))
                     else:
