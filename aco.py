@@ -80,12 +80,23 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    for source, target in zip(path, path[1:]):
-        edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+    # Optimization: Inline _edge_metric and avoid zip(path, path[1:]) to optimize the tight inner loop
+    # This prevents tuple unpacking and list slicing memory allocations
+    for i in range(len(path) - 1):
+        edge = G[path[i]][path[i + 1]]
+
+        val_lat = float(edge.get("weight", 1.0))
+        latency = val_lat if val_lat > MIN_EDGE_COST else MIN_EDGE_COST
+
+        val_cong = float(edge.get("congestion", 1.0))
+        congestion = val_cong if val_cong > MIN_EDGE_COST else MIN_EDGE_COST
+
+        val_rel = float(edge.get("reliability", 1.0))
+        rel = val_rel if val_rel > MIN_EDGE_COST else MIN_EDGE_COST
+        reliability = rel if rel < 1.0 else 1.0
+
+        val_pher = float(edge.get("pheromone", 1.0))
+        edge_pheromone = val_pher if val_pher > MIN_EDGE_COST else MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
