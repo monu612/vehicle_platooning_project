@@ -80,12 +80,12 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    for source, target in zip(path, path[1:]):
-        edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+    for i in range(len(path) - 1):
+        edge = G[path[i]][path[i+1]]
+        latency = max(float(edge.get("weight", 1.0)), 1e-9)
+        congestion = max(float(edge.get("congestion", 1.0)), 1e-9)
+        reliability = min(max(float(edge.get("reliability", 1.0)), 1e-9), 1.0)
+        edge_pheromone = max(float(edge.get("pheromone", 1.0)), 1e-9)
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -104,6 +104,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -111,10 +112,17 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        # Fast path: filter precomputed paths to see which still exist
+        paths = [
+            list(p) for p in precomputed_paths
+            if p[0] == source and p[-1] == target and all(G.has_edge(p[i], p[i+1]) for i in range(len(p)-1))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
@@ -150,19 +158,20 @@ def update_pheromone(
     edges = []
     total_latency = 0.0
 
-    for source, target in zip(path, path[1:]):
+    for i in range(len(path) - 1):
+        source, target = path[i], path[i+1]
         if not G.has_edge(source, target):
             return 0.0
 
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        total_latency += max(float(G[source][target].get("weight", 1.0)), 1e-9)
 
     reward = deposit_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
-        current = _edge_metric(edge, "pheromone", 1.0)
-        edge["pheromone"] = _clamp_pheromone((1 - rho) * current + reward)
+        current = max(float(edge.get("pheromone", 1.0)), 1e-9)
+        edge["pheromone"] = max(0.1, min((1 - rho) * current + reward, 10.0))
 
     return reward
 
@@ -177,8 +186,8 @@ def evaporate_all(G: nx.Graph, rho: float = 0.1) -> None:
         raise ValueError("rho must be between 0 and 1.")
 
     for _, _, edge in G.edges(data=True):
-        current = edge.get("pheromone", 1.0)
-        edge["pheromone"] = _clamp_pheromone((1 - rho) * current)
+        current = float(edge.get("pheromone", 1.0))
+        edge["pheromone"] = max(0.1, min((1 - rho) * current, 10.0))
 
 
 def deposit_elite(
@@ -192,14 +201,15 @@ def deposit_elite(
 
     total_latency = 0.0
     edges = []
-    for source, target in zip(best_path, best_path[1:]):
+    for i in range(len(best_path) - 1):
+        source, target = best_path[i], best_path[i+1]
         if not G.has_edge(source, target):
             return
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        total_latency += max(float(G[source][target].get("weight", 1.0)), 1e-9)
 
     bonus = elite_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
-        edge["pheromone"] = _clamp_pheromone(edge.get("pheromone", 1.0) + bonus)
+        edge["pheromone"] = max(0.1, min(float(edge.get("pheromone", 1.0)) + bonus, 10.0))

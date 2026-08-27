@@ -103,7 +103,7 @@ def _validate_inputs(runs: int, failure_rate: float, congestion_factor: float) -
 
 
 def _path_latency(G: nx.Graph, path: list[str]) -> float:
-    return sum(float(G[s][t].get("weight", 1.0)) for s, t in zip(path, path[1:]))
+    return sum(float(G[path[i]][path[i+1]].get("weight", 1.0)) for i in range(len(path) - 1))
 
 
 def _mean(values: Sequence[float]) -> float:
@@ -199,6 +199,14 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # Pre-compute all simple paths for ACO to avoid recalculating them on the mutated graph
+    aco_paths: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            aco_paths[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths[destination] = []
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -263,6 +271,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=aco_paths[destination],
             )
 
             if path:
@@ -285,7 +294,8 @@ def run_simulation(
             if base_path:
                 valid = True
                 total_latency_base = 0.0
-                for source, target in zip(base_path, base_path[1:]):
+                for i in range(len(base_path) - 1):
+                    source, target = base_path[i], base_path[i+1]
                     if G_temp.has_edge(source, target):
                         total_latency_base += float(G_temp[source][target].get("weight", 1.0))
                     else:
