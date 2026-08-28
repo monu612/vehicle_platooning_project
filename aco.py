@@ -80,12 +80,30 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    for source, target in zip(path, path[1:]):
+    # Optimization: Use index-based loop instead of zip for performance,
+    # and inline _edge_metric to avoid function call overhead.
+    for i in range(len(path) - 1):
+        source = path[i]
+        target = path[i + 1]
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        latency = float(edge.get("weight", 1.0))
+        if latency < MIN_EDGE_COST:
+            latency = MIN_EDGE_COST
+
+        congestion = float(edge.get("congestion", 1.0))
+        if congestion < MIN_EDGE_COST:
+            congestion = MIN_EDGE_COST
+
+        reliability = float(edge.get("reliability", 1.0))
+        if reliability < MIN_EDGE_COST:
+            reliability = MIN_EDGE_COST
+        if reliability > 1.0:
+            reliability = 1.0
+
+        edge_pheromone = float(edge.get("pheromone", 1.0))
+        if edge_pheromone < MIN_EDGE_COST:
+            edge_pheromone = MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -147,22 +165,32 @@ def update_pheromone(
     if not path or len(path) < 2:
         return 0.0
 
-    edges = []
     total_latency = 0.0
-
-    for source, target in zip(path, path[1:]):
+    for i in range(len(path) - 1):
+        source = path[i]
+        target = path[i + 1]
         if not G.has_edge(source, target):
             return 0.0
 
-        edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        edge = G[source][target]
+        latency = float(edge.get("weight", 1.0))
+        if latency < MIN_EDGE_COST:
+            latency = MIN_EDGE_COST
+        total_latency += latency
 
     reward = deposit_factor / total_latency
 
-    for source, target in edges:
+    for i in range(len(path) - 1):
+        source = path[i]
+        target = path[i + 1]
         edge = G[source][target]
-        current = _edge_metric(edge, "pheromone", 1.0)
-        edge["pheromone"] = _clamp_pheromone((1 - rho) * current + reward)
+
+        current = float(edge.get("pheromone", 1.0))
+        if current < MIN_EDGE_COST:
+            current = MIN_EDGE_COST
+
+        new_val = (1 - rho) * current + reward
+        edge["pheromone"] = max(PHEROMONE_MIN, min(new_val, PHEROMONE_MAX))
 
     return reward
 
@@ -176,9 +204,11 @@ def evaporate_all(G: nx.Graph, rho: float = 0.1) -> None:
     if not 0.0 <= rho <= 1.0:
         raise ValueError("rho must be between 0 and 1.")
 
+    factor = 1.0 - rho
     for _, _, edge in G.edges(data=True):
-        current = edge.get("pheromone", 1.0)
-        edge["pheromone"] = _clamp_pheromone((1 - rho) * current)
+        current = float(edge.get("pheromone", 1.0))
+        new_val = factor * current
+        edge["pheromone"] = max(PHEROMONE_MIN, min(new_val, PHEROMONE_MAX))
 
 
 def deposit_elite(
@@ -191,15 +221,24 @@ def deposit_elite(
         return
 
     total_latency = 0.0
-    edges = []
-    for source, target in zip(best_path, best_path[1:]):
+    for i in range(len(best_path) - 1):
+        source = best_path[i]
+        target = best_path[i + 1]
         if not G.has_edge(source, target):
             return
-        edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+
+        edge = G[source][target]
+        latency = float(edge.get("weight", 1.0))
+        if latency < MIN_EDGE_COST:
+            latency = MIN_EDGE_COST
+        total_latency += latency
 
     bonus = elite_factor / total_latency
 
-    for source, target in edges:
+    for i in range(len(best_path) - 1):
+        source = best_path[i]
+        target = best_path[i + 1]
         edge = G[source][target]
-        edge["pheromone"] = _clamp_pheromone(edge.get("pheromone", 1.0) + bonus)
+        current = float(edge.get("pheromone", 1.0))
+        new_val = current + bonus
+        edge["pheromone"] = max(PHEROMONE_MIN, min(new_val, PHEROMONE_MAX))
