@@ -1,0 +1,3 @@
+## 2024-08-28 - Bottleneck in `zip` and inner loop function calls
+**Learning:** In hot loops within path evaluation (like `_path_score` and `update_pheromone`), using `zip(path, path[1:])` creates a noticeable overhead by creating new tuples for each iteration. In addition, abstracting dictionary accesses to helper functions (`_edge_metric`) within these tight loops adds function call overhead that drastically slows down iterations over network paths.
+**Action:** Replace `zip(path, path[1:])` with an index-based loop `range(len(path) - 1)` to avoid generating tuples. Inline dictionary accesses (`float(edge.get("key", 1.0))`) to skip the function call overhead of wrapper functions, while maintaining the same fallback defaults and clamping logic inline.
