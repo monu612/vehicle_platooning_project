@@ -1,0 +1,3 @@
+## 2025-03-01 - Avoid dictionary lookup function overhead in tight pathfinding loops
+**Learning:** In tight pathfinding inner loops (like evaluating many paths via `_path_score`), using wrapper functions (like `_edge_metric`) that perform dictionary `.get()` lookups and value clamping introduces significant Python function call overhead. Additionally, using `zip(path, path[1:])` incurs list slicing and tuple packing overhead.
+**Action:** Inline the dictionary lookup logic (`.get()`) with explicit type casting and clamping (`if` statements are faster than `max()/min()`), and iterate using `range(len(path) - 1)` with index-based access (`G[path[i]][path[i+1]]`) to improve execution speed substantially.
