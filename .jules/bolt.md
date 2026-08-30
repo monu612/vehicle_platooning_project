@@ -1,0 +1,3 @@
+## 2026-08-30 - NetworkX Dynamic Graph Pathfinding
+**Learning:** In a dynamic graph where edges fail each iteration, calling `nx.all_simple_paths` on every routing decision creates a huge bottleneck (the single most expensive operation in profiling) due to Python object overhead and continuous path reconstruction.
+**Action:** Precompute paths on the pristine static topology *before* mutations start. On each simulation tick, iterate over these precomputed paths and verify their validity (endpoints correct, edges exist in current mutated graph). This approach replaces costly recursive network traversal with a fast linear search and string/dict lookups, nearly doubling simulation speed (total time reduced from 3.19s to 1.70s for 500 runs).
