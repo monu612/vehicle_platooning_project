@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import math
 import random
 from collections.abc import Sequence
@@ -80,13 +81,12 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    # Optimization: Use indexed loop to avoid zip overhead and inline edge metric extraction
-    for i in range(len(path) - 1):
-        edge = G[path[i]][path[i+1]]
-        latency = max(float(edge.get("weight", 1.0)), MIN_EDGE_COST)
-        congestion = max(float(edge.get("congestion", 1.0)), MIN_EDGE_COST)
-        reliability = min(max(float(edge.get("reliability", 1.0)), MIN_EDGE_COST), 1.0)
-        edge_pheromone = max(float(edge.get("pheromone", 1.0)), MIN_EDGE_COST)
+    for source, target in itertools.pairwise(path):
+        edge = G[source][target]
+        latency = _edge_metric(edge, "weight", 1.0)
+        congestion = _edge_metric(edge, "congestion", 1.0)
+        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
+        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -151,14 +151,12 @@ def update_pheromone(
     edges = []
     total_latency = 0.0
 
-    # Optimization: Use indexed loop to avoid zip overhead
-    for i in range(len(path) - 1):
-        source, target = path[i], path[i+1]
+    for source, target in itertools.pairwise(path):
         if not G.has_edge(source, target):
             return 0.0
 
         edges.append((source, target))
-        total_latency += max(float(G[source][target].get("weight", 1.0)), MIN_EDGE_COST)
+        total_latency += _edge_metric(G[source][target], "weight", 1.0)
 
     reward = deposit_factor / total_latency
 

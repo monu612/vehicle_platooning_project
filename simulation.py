@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import itertools
 import json
 import random
 from dataclasses import dataclass, field
@@ -103,11 +104,7 @@ def _validate_inputs(runs: int, failure_rate: float, congestion_factor: float) -
 
 
 def _path_latency(G: nx.Graph, path: list[str]) -> float:
-    # Optimization: Use indexed loop to avoid zip overhead
-    total = 0.0
-    for i in range(len(path) - 1):
-        total += float(G[path[i]][path[i+1]].get("weight", 1.0))
-    return total
+    return sum(float(G[s][t].get("weight", 1.0)) for s, t in itertools.pairwise(path))
 
 
 def _mean(values: Sequence[float]) -> float:
