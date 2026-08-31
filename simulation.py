@@ -103,7 +103,11 @@ def _validate_inputs(runs: int, failure_rate: float, congestion_factor: float) -
 
 
 def _path_latency(G: nx.Graph, path: list[str]) -> float:
-    return sum(float(G[s][t].get("weight", 1.0)) for s, t in zip(path, path[1:]))
+    # Optimization: Use indexed loop to avoid zip overhead
+    total = 0.0
+    for i in range(len(path) - 1):
+        total += float(G[path[i]][path[i+1]].get("weight", 1.0))
+    return total
 
 
 def _mean(values: Sequence[float]) -> float:
