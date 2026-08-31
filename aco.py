@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import itertools
 import math
 import random
 from collections.abc import Sequence
@@ -80,7 +81,7 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    for source, target in zip(path, path[1:]):
+    for source, target in itertools.pairwise(path):
         edge = G[source][target]
         latency = _edge_metric(edge, "weight", 1.0)
         congestion = _edge_metric(edge, "congestion", 1.0)
@@ -150,7 +151,7 @@ def update_pheromone(
     edges = []
     total_latency = 0.0
 
-    for source, target in zip(path, path[1:]):
+    for source, target in itertools.pairwise(path):
         if not G.has_edge(source, target):
             return 0.0
 

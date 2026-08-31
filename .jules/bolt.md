@@ -1,0 +1,3 @@
+## 2026-08-31 - [Optimization: Avoid zip in tight loops]
+**Learning:** In tight inner loops iterating over consecutive elements in a sequence, replacing `zip(path, path[1:])` with `itertools.pairwise(path)` (Python 3.10+) completely avoids the O(N) memory allocation from list slicing and is significantly faster than both `zip` and index-based loops (`range(len(path) - 1)`), which are considered slower anti-patterns in Python.
+**Action:** Update `aco.py` and `simulation.py` to use `itertools.pairwise` for path iteration.
