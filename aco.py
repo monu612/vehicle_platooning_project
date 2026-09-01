@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import itertools
 import math
 import random
 from collections.abc import Sequence
@@ -81,9 +80,8 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
-    # Optimization: Iterate over pairs with itertools.pairwise to avoid list slicing overhead.
-    # We also manually inline dictionary bounds checking to avoid Python function call overhead.
-    for source, target in itertools.pairwise(path):
+    # Optimization: We manually inline dictionary bounds checking to avoid Python function call overhead.
+    for source, target in zip(path, path[1:]):
         edge = G[source][target]
 
         latency = float(edge.get("weight", 1.0))
