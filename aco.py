@@ -80,12 +80,22 @@ def _path_score(
     pheromone = 1.0
     heuristic = 1.0
 
+    # Optimization: We manually inline dictionary bounds checking to avoid Python function call overhead.
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        latency = float(edge.get("weight", 1.0))
+        if latency < 1e-9: latency = 1e-9
+
+        congestion = float(edge.get("congestion", 1.0))
+        if congestion < 1e-9: congestion = 1e-9
+
+        reliability = float(edge.get("reliability", 1.0))
+        if reliability < 1e-9: reliability = 1e-9
+        elif reliability > 1.0: reliability = 1.0
+
+        edge_pheromone = float(edge.get("pheromone", 1.0))
+        if edge_pheromone < 1e-9: edge_pheromone = 1e-9
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
