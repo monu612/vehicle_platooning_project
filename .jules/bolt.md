@@ -1,0 +1,3 @@
+## 2024-05-19 - Precomputing Paths for Dynamically Failing Graphs
+**Learning:** In networkx, computing all simple paths on a graph repeatedly is extremely slow. When working with dynamically failing graph topologies (where edges are temporarily removed), calculating `nx.all_simple_paths` during each iteration becomes a major bottleneck.
+**Action:** Precompute the simple paths on the pristine static base topology *before* any dynamic mutations occur. During iterations, simply filter these precomputed paths by verifying their endpoints and ensuring every consecutive edge still exists in the dynamically perturbed graph (e.g., using `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`).
