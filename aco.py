@@ -14,11 +14,6 @@ PHEROMONE_MIN = 0.1
 PHEROMONE_MAX = 10.0
 
 
-def _edge_metric(edge: dict, name: str, default: float) -> float:
-    value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
-
-
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
     return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
@@ -82,10 +77,20 @@ def _path_score(
 
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        # inline _edge_metric
+        latency = float(edge.get("weight", 1.0))
+        latency = latency if latency > MIN_EDGE_COST else MIN_EDGE_COST
+
+        congestion = float(edge.get("congestion", 1.0))
+        congestion = congestion if congestion > MIN_EDGE_COST else MIN_EDGE_COST
+
+        reliability = float(edge.get("reliability", 1.0))
+        reliability = reliability if reliability > MIN_EDGE_COST else MIN_EDGE_COST
+        reliability = reliability if reliability < 1.0 else 1.0
+
+        edge_pheromone = float(edge.get("pheromone", 1.0))
+        edge_pheromone = edge_pheromone if edge_pheromone > MIN_EDGE_COST else MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -155,13 +160,15 @@ def update_pheromone(
             return 0.0
 
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        val = float(G[source][target].get("weight", 1.0))
+        total_latency += val if val > MIN_EDGE_COST else MIN_EDGE_COST
 
     reward = deposit_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
-        current = _edge_metric(edge, "pheromone", 1.0)
+        current = float(edge.get("pheromone", 1.0))
+        current = current if current > MIN_EDGE_COST else MIN_EDGE_COST
         edge["pheromone"] = _clamp_pheromone((1 - rho) * current + reward)
 
     return reward
@@ -196,7 +203,8 @@ def deposit_elite(
         if not G.has_edge(source, target):
             return
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        val = float(G[source][target].get("weight", 1.0))
+        total_latency += val if val > MIN_EDGE_COST else MIN_EDGE_COST
 
     bonus = elite_factor / total_latency
 
