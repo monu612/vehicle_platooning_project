@@ -184,6 +184,13 @@ def run_simulation(
 
     G = create_spider_web_topology(rng=rng)
 
+    static_paths: dict[str, list[list[str]]] = {}
+    for dest in DESTINATIONS:
+        try:
+            static_paths[dest] = list(nx.all_simple_paths(G, "M", dest, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            static_paths[dest] = []
+
     packets_sent = 0
     packets_received_aco = 0
     packets_received_baseline = 0
@@ -263,6 +270,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=static_paths.get(destination),
             )
 
             if path:

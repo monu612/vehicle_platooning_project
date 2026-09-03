@@ -1,0 +1,3 @@
+## 2024-03-24 - Precomputing static graph paths
+**Learning:** For pathfinding on the dynamic networkx graph, `nx.all_simple_paths(G_temp, ...)` is called every single step and is a major bottleneck. By precomputing simple paths on the pristine static base topology *before* any dynamic mutations occur, and filtering them in `select_path` by verifying that every consecutive edge exists (`all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`), we can skip the expensive path enumeration in the hot loop.
+**Action:** Add an optional `precomputed_paths` argument to `select_path`. Precompute paths once in `simulation.py` and pass them in.
