@@ -1,3 +1,3 @@
-## 2024-03-24 - Inline wrapper methods for performance
-**Learning:** Found an edge metric lookup wrapper `_edge_metric(edge, key, default)` that is heavily used in hot loops in `aco.py` and causes Python function overhead.
-**Action:** Inline it or rewrite the tight loops to access dict and max directly to skip function call overhead.
+## 2024-03-24 - Precomputing static graph paths
+**Learning:** For pathfinding on the dynamic networkx graph, `nx.all_simple_paths(G_temp, ...)` is called every single step and is a major bottleneck. By precomputing simple paths on the pristine static base topology *before* any dynamic mutations occur, and filtering them in `select_path` by verifying that every consecutive edge exists (`all(G.has_edge(u, v) for u, v in zip(path, path[1:]))`), we can skip the expensive path enumeration in the hot loop.
+**Action:** Add an optional `precomputed_paths` argument to `select_path`. Precompute paths once in `simulation.py` and pass them in.
