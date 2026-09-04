@@ -82,17 +82,27 @@ def _path_score(
 
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        latency = float(edge.get("weight", 1.0))
+        latency = latency if latency > MIN_EDGE_COST else MIN_EDGE_COST
+
+        congestion = float(edge.get("congestion", 1.0))
+        congestion = congestion if congestion > MIN_EDGE_COST else MIN_EDGE_COST
+
+        reliability = float(edge.get("reliability", 1.0))
+        reliability = reliability if reliability > MIN_EDGE_COST else MIN_EDGE_COST
+        reliability = reliability if reliability < 1.0 else 1.0
+
+        edge_pheromone = float(edge.get("pheromone", 1.0))
+        edge_pheromone = edge_pheromone if edge_pheromone > MIN_EDGE_COST else MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
         pheromone *= edge_pheromone ** alpha
 
     score = pheromone * heuristic
-    return score if math.isfinite(score) and score > 0 else 0.0
+    # math.isfinite is slow; checking against float('inf') and > 0 is faster
+    return score if score > 0 and score != float('inf') else 0.0
 
 
 def select_path(
