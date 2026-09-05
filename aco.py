@@ -82,10 +82,19 @@ def _path_score(
 
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        l_val = float(edge.get("weight", 1.0))
+        latency = l_val if l_val > MIN_EDGE_COST else MIN_EDGE_COST
+
+        c_val = float(edge.get("congestion", 1.0))
+        congestion = c_val if c_val > MIN_EDGE_COST else MIN_EDGE_COST
+
+        r_val = float(edge.get("reliability", 1.0))
+        r_clamped = r_val if r_val > MIN_EDGE_COST else MIN_EDGE_COST
+        reliability = r_clamped if r_clamped < 1.0 else 1.0
+
+        p_val = float(edge.get("pheromone", 1.0))
+        edge_pheromone = p_val if p_val > MIN_EDGE_COST else MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -104,6 +113,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -111,10 +121,16 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        paths = [
+            list(p) for p in precomputed_paths
+            if p[0] == source and p[-1] == target and all(G.has_edge(u, v) for u, v in zip(p, p[1:]))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
