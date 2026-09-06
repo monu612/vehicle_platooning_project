@@ -14,11 +14,6 @@ PHEROMONE_MIN = 0.1
 PHEROMONE_MAX = 10.0
 
 
-def _edge_metric(edge: dict, name: str, default: float) -> float:
-    value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
-
-
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
     return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
@@ -82,10 +77,19 @@ def _path_score(
 
     for source, target in zip(path, path[1:]):
         edge = G[source][target]
-        latency = _edge_metric(edge, "weight", 1.0)
-        congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
-        edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
+
+        latency = float(edge.get("weight", 1.0))
+        latency = latency if latency > MIN_EDGE_COST else MIN_EDGE_COST
+
+        congestion = float(edge.get("congestion", 1.0))
+        congestion = congestion if congestion > MIN_EDGE_COST else MIN_EDGE_COST
+
+        rel = float(edge.get("reliability", 1.0))
+        rel = rel if rel > MIN_EDGE_COST else MIN_EDGE_COST
+        reliability = rel if rel < 1.0 else 1.0
+
+        edge_pheromone = float(edge.get("pheromone", 1.0))
+        edge_pheromone = edge_pheromone if edge_pheromone > MIN_EDGE_COST else MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
@@ -104,6 +108,7 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    precomputed_paths: Sequence[Sequence[str]] | None = None,
 ) -> list[str] | None:
     """Select a route using ant-colony pheromone and edge quality metrics."""
     if not 0.0 <= exploration_rate <= 1.0:
@@ -111,10 +116,16 @@ def select_path(
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        paths = [
+            list(p) for p in precomputed_paths
+            if p and p[0] == source and p[-1] == target and all(G.has_edge(u, v) for u, v in zip(p, p[1:]))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
@@ -155,13 +166,15 @@ def update_pheromone(
             return 0.0
 
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        latency = float(G[source][target].get("weight", 1.0))
+        total_latency += latency if latency > MIN_EDGE_COST else MIN_EDGE_COST
 
     reward = deposit_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
-        current = _edge_metric(edge, "pheromone", 1.0)
+        current = float(edge.get("pheromone", 1.0))
+        current = current if current > MIN_EDGE_COST else MIN_EDGE_COST
         edge["pheromone"] = _clamp_pheromone((1 - rho) * current + reward)
 
     return reward
@@ -196,7 +209,8 @@ def deposit_elite(
         if not G.has_edge(source, target):
             return
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        latency = float(G[source][target].get("weight", 1.0))
+        total_latency += latency if latency > MIN_EDGE_COST else MIN_EDGE_COST
 
     bonus = elite_factor / total_latency
 
