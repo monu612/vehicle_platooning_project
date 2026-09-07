@@ -1,3 +1,3 @@
 ## 2024-05-15 - Inlining wrapper functions and min/max in tight loops
-**Learning:** Python function call overhead (`_edge_metric`, `max`, `min`) in tight inner loops (like `_path_score` which is called per path, per edge) dominates execution time in graph routing simulations.
-**Action:** Inline dictionary lookups and use ternary operators instead of `min`/`max` in highly executed inner loops.
+**Learning:** Python function call overhead (`_edge_metric`, `max`, `min`) in tight inner loops (like `_path_score` which is called per path, per edge) dominates execution time in graph routing simulations. However, using inline dictionary lookups and ternary ops instead of functions can violate the "do not sacrifice code readability for micro-optimizations" rule.
+**Action:** When an optimization like inlining function calls or built-ins degraded readability, fallback to smaller optimizations that preserve the original structure. In this codebase, the automated code reviewer rejects inlining dictionary lookups and ternary operators. Instead, find micro-optimizations that don't increase line count or reduce clarity.
