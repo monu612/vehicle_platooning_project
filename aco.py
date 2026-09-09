@@ -16,16 +16,22 @@ PHEROMONE_MAX = 10.0
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
+    if value > MIN_EDGE_COST:
+        return value
+    return MIN_EDGE_COST
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
-    return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
+    if value > PHEROMONE_MAX:
+        return PHEROMONE_MAX
+    if value < PHEROMONE_MIN:
+        return PHEROMONE_MIN
+    return value
 
 
 def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
-    """Calculate average congestion, average reliability, and network instability."""
+    """Calculate average congestion, reliability, and network instability."""
     if not G.edges:
         return 1.0, 1.0, 0.0
 
@@ -42,9 +48,12 @@ def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
     avg_reliability = total_reliability / count
 
     # Instability = 1 - (AvgReliability / AvgCongestion)
-    instability = 1.0 - (avg_reliability / avg_congestion) if avg_congestion > 0 else 0.0
+    instability = 0.0
+    if avg_congestion > 0:
+        instability = 1.0 - (avg_reliability / avg_congestion)
 
-    return avg_congestion, avg_reliability, max(0.0, instability)
+    instability = instability if instability > 0.0 else 0.0
+    return avg_congestion, avg_reliability, instability
 
 
 def adaptive_parameters(
@@ -62,13 +71,21 @@ def adaptive_parameters(
     k2 = 1.0
     k3 = 0.5
 
-    instability = max(0.0, 1.0 - (avg_reliability / avg_congestion)) if avg_congestion > 0 else 0.0
+    instability = 0.0
+    if avg_congestion > 0:
+        instability = 1.0 - (avg_reliability / avg_congestion)
+    instability = instability if instability > 0.0 else 0.0
 
     alpha_t = alpha_0 + k1 * failure_rate
     beta_t = beta_0 + k2 * avg_congestion
     rho_t = rho_0 + k3 * instability
 
-    return alpha_t, beta_t, min(0.99, max(0.01, rho_t))
+    if rho_t < 0.01:
+        rho_t = 0.01
+    elif rho_t > 0.99:
+        rho_t = 0.99
+
+    return alpha_t, beta_t, rho_t
 
 
 def _path_score(
@@ -84,7 +101,9 @@ def _path_score(
         edge = G[source][target]
         latency = _edge_metric(edge, "weight", 1.0)
         congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
+        reliability = _edge_metric(edge, "reliability", 1.0)
+        if reliability > 1.0:
+            reliability = 1.0
         edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
 
         effective_cost = latency * congestion
@@ -140,7 +159,7 @@ def update_pheromone(
     rho: float = 0.1,
     deposit_factor: float = 5.0,
 ) -> float:
-    """Update pheromone on a successful path and return the deposited reward."""
+    """Update pheromone on a valid path and return deposited reward."""
     if not 0.0 <= rho <= 1.0:
         raise ValueError("rho must be between 0 and 1.")
 
@@ -155,14 +174,16 @@ def update_pheromone(
             return 0.0
 
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        edge_data = G[source][target]
+        total_latency += _edge_metric(edge_data, "weight", 1.0)
 
     reward = deposit_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
         current = _edge_metric(edge, "pheromone", 1.0)
-        edge["pheromone"] = _clamp_pheromone((1 - rho) * current + reward)
+        new_pheromone = (1 - rho) * current + reward
+        edge["pheromone"] = _clamp_pheromone(new_pheromone)
 
     return reward
 
@@ -196,10 +217,12 @@ def deposit_elite(
         if not G.has_edge(source, target):
             return
         edges.append((source, target))
-        total_latency += _edge_metric(G[source][target], "weight", 1.0)
+        edge_data = G[source][target]
+        total_latency += _edge_metric(edge_data, "weight", 1.0)
 
     bonus = elite_factor / total_latency
 
     for source, target in edges:
         edge = G[source][target]
-        edge["pheromone"] = _clamp_pheromone(edge.get("pheromone", 1.0) + bonus)
+        new_pheromone = edge.get("pheromone", 1.0) + bonus
+        edge["pheromone"] = _clamp_pheromone(new_pheromone)

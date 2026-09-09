@@ -1,0 +1,3 @@
+## 2025-02-23 - Inline conditional optimization for built-in min/max
+**Learning:** Replacing Python's built-in min() and max() functions with simple if/else conditionals inside extremely tight loops further reduces function call overhead and provides measurable performance gains. While one-line ternary operators achieve the performance gain, they can become unreadable if nested. Breaking them out into simple if/else blocks is a great compromise: it avoids function call overhead while fully preserving readability and PEP8 line-length constraints.
+**Action:** When finding extremely hot loops in simulations calling max or min repeatedly on primitives, replace them with clean conditional if/else blocks to avoid built-in function overhead without degrading readability.
