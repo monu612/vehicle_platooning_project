@@ -16,12 +16,12 @@ PHEROMONE_MAX = 10.0
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
+    return value if value > MIN_EDGE_COST else MIN_EDGE_COST
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
-    return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
+    return PHEROMONE_MAX if value > PHEROMONE_MAX else (PHEROMONE_MIN if value < PHEROMONE_MIN else value)
 
 
 def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
@@ -44,7 +44,7 @@ def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
     # Instability = 1 - (AvgReliability / AvgCongestion)
     instability = 1.0 - (avg_reliability / avg_congestion) if avg_congestion > 0 else 0.0
 
-    return avg_congestion, avg_reliability, max(0.0, instability)
+    return avg_congestion, avg_reliability, instability if instability > 0.0 else 0.0
 
 
 def adaptive_parameters(
@@ -62,13 +62,15 @@ def adaptive_parameters(
     k2 = 1.0
     k3 = 0.5
 
-    instability = max(0.0, 1.0 - (avg_reliability / avg_congestion)) if avg_congestion > 0 else 0.0
+    instability = 1.0 - (avg_reliability / avg_congestion) if avg_congestion > 0 else 0.0
+    instability = instability if instability > 0.0 else 0.0
 
     alpha_t = alpha_0 + k1 * failure_rate
     beta_t = beta_0 + k2 * avg_congestion
     rho_t = rho_0 + k3 * instability
 
-    return alpha_t, beta_t, min(0.99, max(0.01, rho_t))
+    rho_t = 0.01 if rho_t < 0.01 else (0.99 if rho_t > 0.99 else rho_t)
+    return alpha_t, beta_t, rho_t
 
 
 def _path_score(
@@ -84,7 +86,8 @@ def _path_score(
         edge = G[source][target]
         latency = _edge_metric(edge, "weight", 1.0)
         congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
+        reliability = _edge_metric(edge, "reliability", 1.0)
+        reliability = reliability if reliability < 1.0 else 1.0
         edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
 
         effective_cost = latency * congestion
