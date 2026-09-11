@@ -16,12 +16,16 @@ PHEROMONE_MAX = 10.0
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
+    return value if value > MIN_EDGE_COST else MIN_EDGE_COST
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
-    return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
+    if value < PHEROMONE_MIN:
+        return PHEROMONE_MIN
+    elif value > PHEROMONE_MAX:
+        return PHEROMONE_MAX
+    return value
 
 
 def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
