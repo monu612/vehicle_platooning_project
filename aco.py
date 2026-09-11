@@ -16,11 +16,13 @@ PHEROMONE_MAX = 10.0
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
+    # Optimized: Use inline ternary instead of max() to avoid function call overhead in tight loops
     return value if value > MIN_EDGE_COST else MIN_EDGE_COST
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
+    # Optimized: Use if/else instead of max(min()) to avoid function call overhead in tight loops
     if value < PHEROMONE_MIN:
         return PHEROMONE_MIN
     elif value > PHEROMONE_MAX:
