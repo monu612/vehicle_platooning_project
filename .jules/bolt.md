@@ -1,0 +1,3 @@
+## 2026-09-13 - [Optimize max/min wrappers]
+**Learning:** Inlining generic wrapper functions extensively in tight loops inside Python can lead to unreadable boilerplate and might be rejected. However, optimizing the internals of the wrapper function itself (e.g., replacing `max()`/`min()` with ternary operators inside `_edge_metric` and `_clamp_pheromone`) achieves significant performance gains without cluttering the caller's scope and sacrificing code readability.
+**Action:** Replace `min()` and `max()` functions with inline ternary operations or simple `if/else` blocks inside frequently called helper functions like `_edge_metric` to reduce function call overhead cleanly.
