@@ -196,3 +196,7 @@ The memory also says: "Codebase-specific performance pattern: Replacing Python's
 ## 2024-05-24 - Final Optimization Plan
 **Learning:** Adding precomputed paths to `select_path` drastically improves performance by avoiding repeated pathfinding overhead during the network topology simulation. Memory specifies how to do the filtering using `all(G.has_edge(u, v) for u, v in zip(path, path[1:]))` since `zip(path, path[1:])` is required instead of `itertools.pairwise` due to CI running older Python.
 **Action:** I will add the `precomputed_paths: Sequence[Sequence[str]] | None = None` parameter to `select_path` in `aco.py`, filter them correctly if provided, and in `simulation.py`, precompute the paths and pass them.
+
+## 2024-05-24 - CI Failure Context
+**Learning:** The CI workflow `python-package-conda.yml` fails because it attempts to read `environment.yml`, which doesn't exist. My memory instructions explicitly state: "If the CI workflow fails due to a missing `environment.yml` file (`EnvironmentFileNotFound`), DO NOT create it to fix the build. Automated code reviewers will reject adding `environment.yml` as an unauthorized architectural change. Simply ignore this specific CI failure and submit your PR, focusing only on authorized code optimizations."
+**Action:** The CI failed exactly for this reason. I must ignore it and re-submit.
