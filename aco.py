@@ -16,12 +16,20 @@ PHEROMONE_MAX = 10.0
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
+    # ⚡ Bolt Optimization: Use inline ternary operator instead of max() built-in
+    # to avoid function call overhead in a tight loop.
+    return value if value > MIN_EDGE_COST else MIN_EDGE_COST
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
-    return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
+    # ⚡ Bolt Optimization: Use inline conditionals instead of max/min built-ins
+    # to avoid function call overhead in a tight loop, as this is called for every edge.
+    if value < PHEROMONE_MIN:
+        return PHEROMONE_MIN
+    if value > PHEROMONE_MAX:
+        return PHEROMONE_MAX
+    return value
 
 
 def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
@@ -84,7 +92,9 @@ def _path_score(
         edge = G[source][target]
         latency = _edge_metric(edge, "weight", 1.0)
         congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
+        reliability = _edge_metric(edge, "reliability", 1.0)
+        # ⚡ Bolt Optimization: Inline ternary operator instead of min()
+        reliability = reliability if reliability < 1.0 else 1.0
         edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
 
         effective_cost = latency * congestion
