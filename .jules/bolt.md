@@ -1,0 +1,3 @@
+## 2024-05-18 - [NetworkX Private Attributes]
+**Learning:** NetworkX graph internal dictionaries differ across graph classes (e.g., `G._adj` vs `G._atlas`). Attempting to bypass `G[u][v]` by directly accessing `G._atlas` can result in `AttributeError` if the underlying graph instance doesn't have it.
+**Action:** Do not optimize dict lookups in NetworkX by accessing private dicts like `_atlas` or `_adj`. Stick to public APIs or focus on optimizing wrapper logic around those APIs (like inline conditionals instead of `max`/`min` calls) which is safer and still yields significant gains in tight loops.
