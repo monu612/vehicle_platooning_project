@@ -211,6 +211,15 @@ def run_simulation(
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
 
+    # Precompute simple paths for ACO for all destinations before routing
+    # using the static base topology
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for d in DESTINATIONS:
+        try:
+            precomputed_paths[d] = list(nx.all_simple_paths(G, "M", d, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_paths[d] = []
+
     for i in range(runs):
         # Create a copy with per-iteration perturbations.
         G_temp = G.copy()
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=precomputed_paths.get(destination)
             )
 
             if path:
