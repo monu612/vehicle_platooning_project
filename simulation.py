@@ -211,6 +211,15 @@ def run_simulation(
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
 
+    # Precompute simple paths for ACO for all destinations before routing
+    # using the static base topology
+    precomputed_paths: dict[str, list[list[str]]] = {}
+    for d in DESTINATIONS:
+        try:
+            precomputed_paths[d] = list(nx.all_simple_paths(G, "M", d, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            precomputed_paths[d] = []
+
     for i in range(runs):
         # Create a copy with per-iteration perturbations.
         G_temp = G.copy()
@@ -231,16 +240,6 @@ def run_simulation(
         # --- Network state and adaptive parameters ---
         avg_cong, avg_rel, instab = get_network_state(G_temp)
         dyn_alpha, dyn_beta, dyn_rho = adaptive_parameters(avg_cong, avg_rel, failure_rate)
-
-        # Precompute simple paths for ACO for all destinations before routing
-        # using the static base topology
-        if i == 0:
-            precomputed_paths = {}
-            for d in DESTINATIONS:
-                try:
-                    precomputed_paths[d] = list(nx.all_simple_paths(G, "M", d, cutoff=4))
-                except (nx.NetworkXNoPath, nx.NodeNotFound):
-                    precomputed_paths[d] = []
 
         # --- Global pheromone evaporation ---
         # Evaporate on the master graph using the dynamic rho

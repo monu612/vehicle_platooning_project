@@ -16,16 +16,12 @@ PHEROMONE_MAX = 10.0
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
-    return value if value > MIN_EDGE_COST else MIN_EDGE_COST
+    return max(value, MIN_EDGE_COST)
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
-    if value < PHEROMONE_MIN:
-        return PHEROMONE_MIN
-    if value > PHEROMONE_MAX:
-        return PHEROMONE_MAX
-    return value
+    return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
 
 
 def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
@@ -88,8 +84,7 @@ def _path_score(
         edge = G[source][target]
         latency = _edge_metric(edge, "weight", 1.0)
         congestion = _edge_metric(edge, "congestion", 1.0)
-        reliability = _edge_metric(edge, "reliability", 1.0)
-        reliability = reliability if reliability < 1.0 else 1.0
+        reliability = min(_edge_metric(edge, "reliability", 1.0), 1.0)
         edge_pheromone = _edge_metric(edge, "pheromone", 1.0)
 
         effective_cost = latency * congestion
@@ -119,7 +114,11 @@ def select_path(
 
     if precomputed_paths is not None:
         # Filter out precomputed paths that are broken in the dynamic graph
-        paths = [p for p in precomputed_paths if all(G.has_edge(u, v) for u, v in zip(p, p[1:]))]
+        # Also verify the source/target matches in case we cache globally
+        paths = [
+            p for p in precomputed_paths
+            if p[0] == source and p[-1] == target and all(G.has_edge(u, v) for u, v in zip(p, p[1:]))
+        ]
     else:
         try:
             paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
