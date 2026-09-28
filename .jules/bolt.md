@@ -1,0 +1,3 @@
+## 2024-05-24 - Optimizing tight loops with inline conditionals
+**Learning:** In highly repeated ACO simulations, replacing Python's built-in `min()` and `max()` functions with simple ternary operations or explicit `if/else` statements inside internal helper functions (like `_edge_metric` or `_clamp_pheromone`) significantly reduces function call overhead without sacrificing the readability of the outer scope. Doing the same trick with loops (replacing list comprehensions and sum() with standard for loops) also adds a decent performance boost.
+**Action:** Replace slow built-in scalar comparisons (`max`, `min`) with `if/else` or conditionals in frequently called functions, especially in path scoring loops.
