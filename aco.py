@@ -85,17 +85,22 @@ def _path_score(
         # Bolt: Inlined edge metric extraction for fast dictionary lookups and min-cost clamping.
 
         latency = float(edge.get("weight", 1.0))
-        if latency < MIN_EDGE_COST: latency = MIN_EDGE_COST
+        if latency < MIN_EDGE_COST:
+            latency = MIN_EDGE_COST
 
         congestion = float(edge.get("congestion", 1.0))
-        if congestion < MIN_EDGE_COST: congestion = MIN_EDGE_COST
+        if congestion < MIN_EDGE_COST:
+            congestion = MIN_EDGE_COST
 
         reliability = float(edge.get("reliability", 1.0))
-        if reliability < MIN_EDGE_COST: reliability = MIN_EDGE_COST
-        if reliability > 1.0: reliability = 1.0
+        if reliability < MIN_EDGE_COST:
+            reliability = MIN_EDGE_COST
+        if reliability > 1.0:
+            reliability = 1.0
 
         edge_pheromone = float(edge.get("pheromone", 1.0))
-        if edge_pheromone < MIN_EDGE_COST: edge_pheromone = MIN_EDGE_COST
+        if edge_pheromone < MIN_EDGE_COST:
+            edge_pheromone = MIN_EDGE_COST
 
         effective_cost = latency * congestion
         heuristic *= (reliability / effective_cost) ** beta
