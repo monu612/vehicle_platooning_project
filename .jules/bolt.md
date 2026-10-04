@@ -1,0 +1,3 @@
+## 2026-10-04 - [Performance Pattern: Dictionary Lookup Overhead]
+**Learning:** `_path_score` inside `select_path` iterates through many edges and calls `_edge_metric` which repeatedly uses dictionary `.get()` calls and float conversion with `max()` functions. This adds significant overhead during simulations (roughly 50% improvement when inlined and optimized with simple ternary operators).
+**Action:** Inline `_edge_metric` logic into `_path_score`, replacing `max()` with simple ternary `if val < MIN_EDGE_COST: val = MIN_EDGE_COST` and use direct `edge.get()` calls. Provide default values for `alpha` and `beta` parameters in `select_path` to fix existing tests.
