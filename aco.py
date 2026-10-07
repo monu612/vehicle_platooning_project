@@ -15,8 +15,9 @@ PHEROMONE_MAX = 10.0
 
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
+    # ⚡ Bolt: Inline max() to avoid function call overhead
     value = float(edge.get(name, default))
-    return max(value, MIN_EDGE_COST)
+    return value if value > MIN_EDGE_COST else MIN_EDGE_COST
 
 
 def _clamp_pheromone(value: float) -> float:
