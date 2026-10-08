@@ -1,0 +1,3 @@
+## 2024-05-18 - Avoid built-in min/max overhead in tight loops
+**Learning:** In a codebase with tight simulation loops that iterate millions of times over network edges, using Python's built-in `min()` and `max()` functions introduces measurable function call overhead.
+**Action:** Replace `min()` and `max()` with simple inline conditionals (like `if/else` statements or ternary operators) inside critical path functions like `_edge_metric` and `_clamp_pheromone` to reduce execution time without sacrificing much readability.
