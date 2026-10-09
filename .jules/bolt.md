@@ -1,0 +1,3 @@
+## 2026-10-09 - Path caching in dynamic network topologies
+**Learning:** Precomputing paths using `nx.all_simple_paths` on a dynamic network topology without considering edge additions/deletions or cutoff constraints introduces critical functional bugs (stale cache, ignored constraints) and risks memory exhaustion for dense graphs. The automated reviewer correctly identified that caching a generator into a list indefinitely on the graph object is highly dangerous.
+**Action:** Do not blindly cache generator-based pathfinding algorithms in dynamic networks. Stick to safe, stateless micro-optimizations like inlining utility functions to avoid function call overhead without introducing state-related bugs.
