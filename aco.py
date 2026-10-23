@@ -112,7 +112,14 @@ def select_path(
     rng = rng or random.Random()
 
     try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        # Filter precomputed simple paths from the original static topology
+        # to ensure they are still valid in the dynamically mutated graph
+        # avoiding costly generation per iteration.
+        precomputed_paths = G.graph.get("precomputed_paths", {}).get((source, target, cutoff))
+        if precomputed_paths is not None:
+            paths = [p for p in precomputed_paths if all(G.has_edge(p[i], p[i + 1]) for i in range(len(p) - 1))]
+        else:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
     except (nx.NetworkXNoPath, nx.NodeNotFound):
         return None
 
