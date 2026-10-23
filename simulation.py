@@ -199,6 +199,12 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # ⚡ Bolt: Pre-calculate all simple paths for the pristine static base topology
+    # to avoid generator overhead inside the loop.
+    base_simple_paths = {}
+    for destination in DESTINATIONS:
+        base_simple_paths[("M", destination, 4)] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -214,6 +220,7 @@ def run_simulation(
     for i in range(runs):
         # Create a copy with per-iteration perturbations.
         G_temp = G.copy()
+        G_temp.graph["precomputed_paths"] = base_simple_paths
 
         for u, v, edge in list(G_temp.edges(data=True)):
             reliability = float(edge.get("reliability", 1.0))

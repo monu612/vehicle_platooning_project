@@ -15,19 +15,13 @@ PHEROMONE_MAX = 10.0
 
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
-    # ⚡ Bolt: Replaced max() with inline ternary to reduce function call overhead in tight loops
     value = float(edge.get(name, default))
-    return value if value > MIN_EDGE_COST else MIN_EDGE_COST
+    return max(value, MIN_EDGE_COST)
 
 
 def _clamp_pheromone(value: float) -> float:
     """Clamp pheromone to MMAS bounds."""
-    # ⚡ Bolt: Replaced max()/min() with simple if/else block to reduce function call overhead
-    if value < PHEROMONE_MIN:
-        return PHEROMONE_MIN
-    if value > PHEROMONE_MAX:
-        return PHEROMONE_MAX
-    return value
+    return max(PHEROMONE_MIN, min(value, PHEROMONE_MAX))
 
 
 def get_network_state(G: nx.Graph) -> tuple[float, float, float]:
@@ -118,7 +112,14 @@ def select_path(
     rng = rng or random.Random()
 
     try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        # Filter precomputed simple paths from the original static topology
+        # to ensure they are still valid in the dynamically mutated graph
+        # avoiding costly generation per iteration.
+        precomputed_paths = G.graph.get("precomputed_paths", {}).get((source, target, cutoff))
+        if precomputed_paths is not None:
+            paths = [p for p in precomputed_paths if all(G.has_edge(p[i], p[i + 1]) for i in range(len(p) - 1))]
+        else:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
     except (nx.NetworkXNoPath, nx.NodeNotFound):
         return None
 
