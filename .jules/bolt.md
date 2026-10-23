@@ -1,0 +1,3 @@
+## 2026-06-05 - Precompute Graph Paths
+**Learning:** For pathfinding on dynamic graph structures in `networkx`, `nx.all_simple_paths` evaluates the entire node/edge set each time which causes significant performance overhead in hot loops. When dealing with graphs that dynamically alter edge weights and drop edges but do not alter static node connections, precomputing simple paths on the initial static topology provides substantial optimization.
+**Action:** Precompute paths via `nx.all_simple_paths` initially, cache them, and then perform quick edge existence assertions filtering out precomputed paths containing missing edges `G.has_edge()` during hot loops.

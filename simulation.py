@@ -184,6 +184,13 @@ def run_simulation(
 
     G = create_spider_web_topology(rng=rng)
 
+    # ⚡ Bolt Optimization: Lazy path caching
+    # This prevents repeatedly recalculating nx.all_simple_paths on the dynamic subgraph.
+    # Pre-populate cache using the undisrupted static graph topology.
+    path_cache: dict[tuple[str, str, int], list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        path_cache[("M", destination, 4)] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+
     packets_sent = 0
     packets_received_aco = 0
     packets_received_baseline = 0
@@ -263,6 +270,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                path_cache=path_cache,
             )
 
             if path:
