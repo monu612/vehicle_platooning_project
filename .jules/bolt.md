@@ -1,0 +1,3 @@
+## 2024-05-24 - Inline ternary/if-else for wrapper functions in tight loops
+**Learning:** Using Python's built-in `min()` and `max()` inside small utility wrappers that are called very frequently (like `_edge_metric` or `_clamp_pheromone` which run in a hot loop iterating over large graphs multiple times) introduces noticeable function call overhead.
+**Action:** Replace `min()` and `max()` with simple `if/else` logic or inline ternary operations (e.g., `val if val > min else min`) inside these heavily-used helper functions to avoid nested function call overhead while keeping the caller's code clean and readable.
