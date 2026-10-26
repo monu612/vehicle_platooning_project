@@ -211,6 +211,15 @@ def run_simulation(
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
 
+    # ⚡ Bolt: Cache simple paths on the static base topology. We precompute them once
+    # instead of inside the loop, and dynamically filter them per iteration if edges drop.
+    paths_cache: dict[tuple[str, str, int], list[list[str]]] = {}
+    for dest in DESTINATIONS:
+        try:
+            paths_cache[("M", dest, 4)] = list(nx.all_simple_paths(G, "M", dest, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            paths_cache[("M", dest, 4)] = []
+
     for i in range(runs):
         # Create a copy with per-iteration perturbations.
         G_temp = G.copy()
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                _paths_cache=paths_cache,
             )
 
             if path:
