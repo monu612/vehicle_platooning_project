@@ -1,0 +1,7 @@
+name: base
+dependencies:
+  - python>=3.10
+  - matplotlib>=3.8
+  - networkx>=3.2
+  - numpy>=1.26
+  - pytest>=8.0
