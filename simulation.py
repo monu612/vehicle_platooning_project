@@ -199,6 +199,16 @@ def run_simulation(
 
     history: list[IterationMetrics] = []
 
+    # ⚡ Bolt Performance Optimization:
+    # Pre-populate the paths cache using the pristine static base topology before the simulation loop begins.
+    # Expected impact: Dramatically improves simulation execution speed by avoiding expensive nx.all_simple_paths per iteration.
+    aco_paths_cache: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            aco_paths_cache[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths_cache[destination] = []
+
     # Static baseline: pre-compute shortest paths once.
     baseline_paths: dict[str, list[str] | None] = {}
     for destination in DESTINATIONS:
@@ -263,6 +273,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=aco_paths_cache.get(destination),
             )
 
             if path:
