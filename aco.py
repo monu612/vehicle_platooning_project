@@ -13,6 +13,8 @@ MIN_EDGE_COST = 1e-9
 PHEROMONE_MIN = 0.1
 PHEROMONE_MAX = 10.0
 
+MAX_PATH_CUTOFF = 4
+
 
 def _edge_metric(edge: dict, name: str, default: float) -> float:
     value = float(edge.get(name, default))
@@ -102,7 +104,7 @@ def select_path(
     alpha: float,
     beta: float,
     exploration_rate: float = 0.3,
-    cutoff: int = 4,
+    cutoff: int = MAX_PATH_CUTOFF,
     rng: random.Random | None = None,
     precomputed_paths: list[list[str]] | None = None,
 ) -> list[str] | None:
