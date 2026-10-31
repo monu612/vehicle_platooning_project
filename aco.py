@@ -104,17 +104,30 @@ def select_path(
     exploration_rate: float = 0.3,
     cutoff: int = 4,
     rng: random.Random | None = None,
+    precomputed_paths: list[list[str]] | None = None,
 ) -> list[str] | None:
-    """Select a route using ant-colony pheromone and edge quality metrics."""
+    """Select a route using ant-colony pheromone and edge quality metrics.
+
+    ⚡ Bolt: Performance Optimization
+    Accepts precomputed_paths to avoid running expensive nx.all_simple_paths
+    on every call. Paths are dynamically filtered to ensure all edges still exist
+    in the current graph state.
+    """
     if not 0.0 <= exploration_rate <= 1.0:
         raise ValueError("exploration_rate must be between 0 and 1.")
 
     rng = rng or random.Random()
 
-    try:
-        paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
-    except (nx.NetworkXNoPath, nx.NodeNotFound):
-        return None
+    if precomputed_paths is not None:
+        paths = [
+            p for p in precomputed_paths
+            if all(G.has_edge(p[i], p[i + 1]) for i in range(len(p) - 1))
+        ]
+    else:
+        try:
+            paths = list(nx.all_simple_paths(G, source, target, cutoff=cutoff))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
 
     if not paths:
         return None
