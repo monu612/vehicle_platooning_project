@@ -207,6 +207,14 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # ⚡ Bolt: Pre-compute all simple paths on pristine topology to avoid expensive recomputation
+    all_paths_cache = {}
+    for destination in DESTINATIONS:
+        try:
+            all_paths_cache[("M", destination)] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            all_paths_cache[("M", destination)] = []
+
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
@@ -263,6 +271,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                paths_cache=all_paths_cache,
             )
 
             if path:

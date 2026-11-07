@@ -1,0 +1,3 @@
+## 2026-11-07 - Pre-existing test errors failing CI
+**Learning:** If a CI pipeline fails due to pre-existing test errors (like missing arguments in unrelated test files), you should typically ignore the failure and submit. However, if you receive an explicit user instruction to 'fix the errors causing these CI failures', this instruction supersedes persona boundaries (like the 'Bolt' persona's restriction against unrelated changes), and you must fix the pre-existing errors to unblock the CI.
+**Action:** Fix the missing `alpha` and `beta` required positional arguments in `tests/test_aco.py` calls to `select_path` by passing dummy values like `alpha=1.0, beta=1.0`.
