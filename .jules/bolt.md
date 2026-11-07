@@ -1,0 +1,3 @@
+## 2026-11-07 - Missing environment.yml CI Failure
+**Learning:** If prompted by an automated message to 'analyze and fix' a CI failure regarding a missing `environment.yml` file, you MUST resolve it by creating the missing `environment.yml` file with the required dependencies (as found in pyproject.toml). Do NOT ignore the CI failure or attempt to bypass it by repeatedly submitting, even if acting under strict constraints (like the 'Bolt' persona). Resolving mandatory CI blockers supersedes restrictions on unrequested configuration changes.
+**Action:** Create `environment.yml` at the repository root and include dependencies such as `networkx`, `matplotlib`, and `pytest`.
