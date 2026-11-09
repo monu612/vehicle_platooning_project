@@ -207,6 +207,15 @@ def run_simulation(
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             baseline_paths[destination] = None
 
+    # ⚡ Bolt Optimization: Pre-compute all simple paths on the static base topology
+    # This avoids expensive nx.all_simple_paths generator calls per iteration
+    aco_paths_cache: dict[str, list[list[str]]] = {}
+    for destination in DESTINATIONS:
+        try:
+            aco_paths_cache[destination] = list(nx.all_simple_paths(G, "M", destination, cutoff=4))
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            aco_paths_cache[destination] = []
+
     # Track global best for elite ant.
     global_best_path: list[str] | None = None
     global_best_latency = float("inf")
@@ -218,7 +227,7 @@ def run_simulation(
         for u, v, edge in list(G_temp.edges(data=True)):
             reliability = float(edge.get("reliability", 1.0))
             failure_prob = failure_rate * (1 - reliability)
-            if rng.random() < failure_prob:
+            if failure_prob > 0 and rng.random() < failure_prob:
                 G_temp.remove_edge(u, v)
 
         for u, v, edge in G_temp.edges(data=True):
@@ -263,6 +272,7 @@ def run_simulation(
                 beta=dyn_beta,
                 exploration_rate=exploration_rate,
                 rng=rng,
+                precomputed_paths=aco_paths_cache.get(destination),
             )
 
             if path:
