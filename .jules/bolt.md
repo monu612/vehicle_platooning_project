@@ -1,0 +1,3 @@
+## 2026-11-09 - Pre-computing Generator Yields
+**Learning:** Generator-based pathfinding algorithms like `nx.all_simple_paths` can be exceptionally expensive when called per-iteration inside a core loop, particularly because the generator is exhausted completely due to list materialisation (`list(nx.all_simple_paths(...))`).
+**Action:** When working with dynamic simulations that only *remove* edges (e.g., link failures), fully pre-compute all possible simple paths on the pristine static base topology *before* the simulation loop. Inside the loop, dynamically filter these cached paths by verifying edge existence, avoiding costly generator calls entirely.
