@@ -55,7 +55,7 @@ def animate_network(
             G[u][v]["weight"] = max(0.5, G[u][v]["weight"] * rng.uniform(0.92, 1.08))
 
         exploration_rate = max(0.05, 0.3 * (1 - frame / steps))
-        path = select_path(G, "M", target_node, exploration_rate=exploration_rate, rng=rng)
+        path = select_path(G, "M", target_node, alpha=1.0, beta=1.0, exploration_rate=exploration_rate, rng=rng)
 
         if path:
             update_pheromone(G, path)

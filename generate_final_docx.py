@@ -72,11 +72,11 @@ image_index = 1
 chapter_index = 1
 
 def add_md_to_doc(text, doc, chapter_num):
-    global image_index
+
     lines = text.split('\n')
     in_code_block = False
     code_text = ""
-    
+
     for line in lines:
         if line.startswith('```'):
             if in_code_block:
@@ -90,7 +90,7 @@ def add_md_to_doc(text, doc, chapter_num):
             else:
                 in_code_block = True
             continue
-            
+
         if in_code_block:
             code_text += line + "\n"
             continue
@@ -127,7 +127,7 @@ for chapter_name, section_titles in chapter_map.items():
         if title in sections:
             doc.add_heading(title, level=2)
             add_md_to_doc(sections[title], doc, chapter_index)
-            
+
             # Special image injection based on chapter content
             if "UI DESIGN" in title:
                 img_path = os.path.join(image_dir, "latency_graph.png") # UI placeholder
