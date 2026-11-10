@@ -1,0 +1,3 @@
+## 2026-11-10 - Avoiding Path Enumeration in Loops
+**Learning:** For pathfinding on dynamic networkx graphs, never cache generator-based algorithms (like `nx.all_simple_paths`) directly onto the dynamically mutating graph object, as it causes stale caches, ignores cutoff constraints, and risks memory exhaustion.
+**Action:** Fully pre-populate the paths cache using the pristine static base topology *before* the simulation loop begins (avoiding lazy-loading inside the loop where only the mutated graph is available), and filter them dynamically per iteration by verifying that every consecutive edge still exists.
